@@ -1,4 +1,6 @@
 import dotenv from "dotenv";
+import adminRoutes from "./routes/adminRoutes.js";
+
 
 dotenv.config();
 
@@ -14,3 +16,4 @@ connectDB();
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+app.use("/api/admin", adminRoutes);
