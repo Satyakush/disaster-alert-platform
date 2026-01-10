@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import adminRoutes from "./routes/adminRoutes.js";
-
+import alertRoutes from "./routes/alertRoutes.js";
+import cors from "cors";
 
 dotenv.config();
 
@@ -16,4 +17,7 @@ connectDB();
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+
 app.use("/api/admin", adminRoutes);
+app.use("/api/alerts", alertRoutes);
