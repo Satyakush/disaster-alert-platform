@@ -1,86 +1,49 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { fetchAlerts } from "../api/alerts";
+import AlertCard from "../components/AlertCard";
+import Navbar from "../components/Navbar";
 
-function Dashboard() {
+
+export default function Dashboard() {
+  const { token, logout, user } = useAuth();
   const [alerts, setAlerts] = useState([]);
   const [error, setError] = useState("");
 
-  // Fetch alerts from backend
-  useEffect(() => {
-    const fetchAlerts = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setError("No token found. Please login again.");
-          return;
-        }
+useEffect(() => {
+  const loadAlerts = async () => {
+    try {
+      const data = await fetchAlerts();
+      setAlerts(data.alerts);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load alerts");
+    }
+  };
 
-        const res = await fetch("http://localhost:5000/api/alerts", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+  loadAlerts();
+}, []);
 
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.message || "Failed to fetch alerts");
-          return;
-        }
-
-        setAlerts(data.alerts);
-      } catch (err) {
-        console.error(err);
-        setError("Server error while fetching alerts");
-      }
-    };
-
-    fetchAlerts();
-  }, []);
 
   return (
-    <div style={{ maxWidth: "800px", margin: "30px auto" }}>
-      <h2>Admin Dashboard</h2>
+  <div className="min-h-screen bg-gray-100">
+    <Navbar />
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {alerts.length === 0 ? (
-        <p>No alerts found</p>
-      ) : (
-        <table
-          border="1"
-          cellPadding="10"
-          cellSpacing="0"
-          style={{ width: "100%", marginTop: "20px" }}
-        >
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Description</th>
-              <th>Disaster Type</th>
-              <th>Severity</th>
-              <th>Location</th>
-              <th>Created By</th>
-              <th>Created At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {alerts.map((alert) => (
-              <tr key={alert._id}>
-                <td>{alert.title}</td>
-                <td>{alert.description}</td>
-                <td>{alert.disasterType}</td>
-                <td>{alert.severity}</td>
-                <td>{alert.location}</td>
-                <td>{alert.createdBy.name}</td>
-                <td>{new Date(alert.createdAt).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <main className="max-w-6xl mx-auto p-6">
+      {error && (
+        <p className="text-red-600 mb-4">{error}</p>
       )}
-    </div>
-  );
-}
 
-export default Dashboard;
+      <div className="grid gap-4">
+        {alerts.length === 0 ? (
+          <p className="text-gray-500">No alerts found</p>
+        ) : (
+          alerts.map((alert) => (
+            <AlertCard key={alert._id} alert={alert} />
+          ))
+        )}
+      </div>
+    </main>
+  </div>
+);
+}

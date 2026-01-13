@@ -1,7 +1,7 @@
-import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-const Navbar = () => {
+export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -12,18 +12,24 @@ const Navbar = () => {
 
   return (
     <nav className="flex justify-between items-center px-6 py-4 bg-slate-900 text-white">
-      <h1 className="font-semibold text-lg">Disaster Alert Platform</h1>
+      <h1 className="font-semibold text-lg">
+        Disaster Alert Platform
+      </h1>
 
       {user && (
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 bg-red-600 rounded hover:bg-red-700"
-        >
-          Logout
-        </button>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-300">
+            {user.name}
+          </span>
+
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-600 rounded hover:bg-red-700"
+          >
+            Logout
+          </button>
+        </div>
       )}
     </nav>
   );
-};
-
-export default Navbar;
+}
