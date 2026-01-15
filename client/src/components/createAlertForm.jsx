@@ -2,10 +2,10 @@ import { useState } from "react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
-export default function CreateAlertForm({ onAlertCreated }) {
+export default function CreateAlertForm({ onCreated }) {
   const { user } = useAuth();
 
-  // Admin-only safety (UI-level, backend already enforces this)
+  // UI-level admin safety (backend already enforces)
   if (user?.role !== "admin") return null;
 
   const [form, setForm] = useState({
@@ -32,7 +32,12 @@ export default function CreateAlertForm({ onAlertCreated }) {
     try {
       await api.post("/alerts", form);
 
-      // Reset form after success
+      // ✅ CRITICAL FIX — refresh alerts instantly
+      if (onCreated) {
+        await onCreated();
+      }
+
+      // Reset form
       setForm({
         title: "",
         description: "",
@@ -40,13 +45,11 @@ export default function CreateAlertForm({ onAlertCreated }) {
         severity: "low",
         location: "",
       });
-
-      // Refresh alerts list in dashboard
-      if (onAlertCreated) {
-        onAlertCreated();
-      }
     } catch (err) {
-      console.error("Create alert failed:", err.response?.data || err.message);
+      console.error(
+        "Create alert failed:",
+        err.response?.data || err.message
+      );
       setError(
         err.response?.data?.message || "Failed to create alert"
       );
@@ -57,7 +60,9 @@ export default function CreateAlertForm({ onAlertCreated }) {
 
   return (
     <div className="bg-white shadow rounded-lg p-6 mb-6">
-      <h2 className="text-lg font-semibold mb-4">Create New Alert</h2>
+      <h2 className="text-lg font-semibold mb-4">
+        Create New Alert
+      </h2>
 
       {error && (
         <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
