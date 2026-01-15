@@ -23,44 +23,57 @@ export default function Dashboard() {
   }
 };
 
-
 useEffect(() => {
+
   loadAlerts();
 }, []);
 
-  return (
+ return (
   <div className="min-h-screen bg-gray-100">
     <Navbar />
 
-    <main className="max-w-6xl mx-auto p-6">
-    <div className="mb-4">
-  <span className="text-sm text-gray-600">
-    Role:{" "}
-    <strong className="capitalize">
-      {user?.role}
-    </strong>
-  </span>
-</div>
+    <main className="max-w-6xl mx-auto px-6 py-8">
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">
+          Alerts Dashboard
+        </h2>
+        <p className="text-sm text-gray-500">
+          Monitor and manage disaster alerts
+        </p>
+      </div>
 
-{isAdmin && (
-  <CreateAlertForm onAlertCreated={loadAlerts} />
-)}
+      {/* Admin create */}
+      {isAdmin && (
+        <div className="mb-8">
+          <CreateAlertForm onCreated={loadAlerts} />
+        </div>
+      )}
 
+      {/* Errors */}
       {error && (
         <p className="text-red-600 mb-4">{error}</p>
       )}
 
-      <div className="grid gap-4">
+      {/* Alerts */}
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {alerts.length === 0 ? (
-          <p className="text-gray-500">No alerts found</p>
+          <p className="text-gray-500">
+            No alerts available
+          </p>
         ) : (
           alerts.map((alert) => (
-            <AlertCard key={alert._id} alert={alert} />
+            <AlertCard
+              key={alert._id}
+              alert={alert}
+              setAlerts={setAlerts}
+            />
           ))
         )}
-
       </div>
     </main>
   </div>
 );
+
+
 }
