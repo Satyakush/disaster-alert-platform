@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState([]);
   const [error, setError] = useState("");
   const isAdmin = user?.role === "admin";
+  const [selectedRegion, setSelectedRegion] = useState(null);
 
   const loadAlerts = async () => {
     try {
@@ -45,7 +46,12 @@ export default function Dashboard() {
         </div>
 
         {/* STEP 1 — MAP + SEARCH */}
-        <MapView />
+        <MapView onRegionSelect={setSelectedRegion} />
+          {selectedRegion && (
+  <pre>{JSON.stringify(selectedRegion, null, 2)}</pre>
+)}
+
+
 
         {/* Admin-only: Create Alert */}
         {isAdmin && (

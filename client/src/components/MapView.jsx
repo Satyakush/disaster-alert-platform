@@ -1,10 +1,10 @@
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Circle, useMapEvents } from "react-leaflet";
 import { useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { searchPlace } from "../api/geocode";
-
-// Fix leaflet marker icon issue
 import L from "leaflet";
+
+/* Fix marker icons */
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -15,25 +15,29 @@ L.Icon.Default.mergeOptions({
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-function RecenterMap({ center }) {
-  const map = useMap();
-  map.setView(center, 10);
+function ClickHandler({ setRegion }) {
+  useMapEvents({
+    click(e) {
+      setRegion({
+        lat: e.latlng.lat,
+        lng: e.latlng.lng,
+        radius: 3000, // default 3km
+      });
+    },
+  });
   return null;
 }
 
-export default function MapView() {
+export default function MapView({ onRegionSelect }) {
   const [query, setQuery] = useState("");
-  const [center, setCenter] = useState([22.7196, 75.8577]); // Indore default
+  const [center, setCenter] = useState([22.7196, 75.8577]);
   const [marker, setMarker] = useState(null);
+  const [region, setRegion] = useState(null);
   const [error, setError] = useState("");
 
   const handleSearch = async () => {
-    if (!query) return;
-
     try {
-      setError("");
       const results = await searchPlace(query);
-
       if (!results.length) {
         setError("Location not found");
         return;
@@ -41,30 +45,34 @@ export default function MapView() {
 
       const place = results[0];
       const lat = parseFloat(place.lat);
-      const lon = parseFloat(place.lon);
+      const lng = parseFloat(place.lon);
 
-      setCenter([lat, lon]);
-      setMarker([lat, lon]);
-    } catch (err) {
+      setCenter([lat, lng]);
+      setMarker([lat, lng]);
+      setError("");
+    } catch {
       setError("Search failed");
     }
   };
 
+  // Sync region to dashboard
+  if (region && onRegionSelect) {
+    onRegionSelect(region);
+  }
+
   return (
-    <div className="bg-white rounded shadow p-4">
+    <div className="bg-white p-4 rounded shadow">
       <h2 className="text-lg font-semibold mb-3">
-        Search Risk Area
+        Select Risk Region
       </h2>
 
       <div className="flex gap-2 mb-3">
         <input
-          type="text"
-          placeholder="Search city / area"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search city / area"
           className="flex-1 border px-3 py-2 rounded"
         />
-
         <button
           onClick={handleSearch}
           className="bg-blue-600 text-white px-4 rounded"
@@ -74,24 +82,49 @@ export default function MapView() {
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 mb-2">
-          {error}
-        </p>
+        <p className="text-sm text-red-600 mb-2">{error}</p>
+      )}
+
+      {region && (
+        <div className="mb-3 text-sm">
+          Radius:
+          <input
+            type="range"
+            min="1000"
+            max="20000"
+            step="500"
+            value={region.radius}
+            onChange={(e) =>
+              setRegion({ ...region, radius: Number(e.target.value) })
+            }
+            className="w-full"
+          />
+          <span className="text-xs text-gray-600">
+            {region.radius / 1000} km
+          </span>
+        </div>
       )}
 
       <MapContainer
         center={center}
         zoom={10}
-        style={{ height: "400px", width: "100%" }}
+        style={{ height: "420px", width: "100%" }}
       >
         <TileLayer
-          attribution="© OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <RecenterMap center={center} />
+        <ClickHandler setRegion={setRegion} />
 
         {marker && <Marker position={marker} />}
+
+        {region && (
+          <Circle
+            center={[region.lat, region.lng]}
+            radius={region.radius}
+            pathOptions={{ color: "red" }}
+          />
+        )}
       </MapContainer>
     </div>
   );
