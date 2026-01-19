@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { fetchAlerts } from "../api/alerts";
+import { analyzeRisk } from "../api/risk";
 
 import Navbar from "../components/Navbar";
 import MapView from "../components/MapView";
@@ -9,11 +10,17 @@ import AlertCard from "../components/AlertCard";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
+  // Alerts
   const [alerts, setAlerts] = useState([]);
   const [error, setError] = useState("");
-  const isAdmin = user?.role === "admin";
+
+  // Map + Risk
   const [selectedRegion, setSelectedRegion] = useState(null);
+  const [riskResult, setRiskResult] = useState(null);
+
+  /* -------------------- ALERTS -------------------- */
 
   const loadAlerts = async () => {
     try {
@@ -29,9 +36,28 @@ export default function Dashboard() {
     loadAlerts();
   }, []);
 
+  /* -------------------- RISK ANALYSIS -------------------- */
+
+  useEffect(() => {
+    if (!selectedRegion) return;
+
+    const fetchRisk = async () => {
+      try {
+        const result = await analyzeRisk(selectedRegion);
+        setRiskResult(result);
+      } catch (err) {
+        console.error("Risk analysis failed:", err);
+      }
+    };
+
+    fetchRisk();
+  }, [selectedRegion]);
+
+  /* -------------------- UI -------------------- */
+
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Top Nav */}
+      {/* Navbar */}
       <Navbar />
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
@@ -45,20 +71,44 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* STEP 1 — MAP + SEARCH */}
+        {/* Map + Region Selection */}
         <MapView onRegionSelect={setSelectedRegion} />
-          {selectedRegion && (
-  <pre>{JSON.stringify(selectedRegion, null, 2)}</pre>
-)}
 
+        {/* Debug (can remove later) */}
+        {selectedRegion && (
+          <pre className="bg-white p-3 rounded text-xs overflow-x-auto">
+            {JSON.stringify(selectedRegion, null, 2)}
+          </pre>
+        )}
 
+        {/* Risk Result */}
+        {riskResult && (
+          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded">
+            <h3 className="font-semibold mb-1">
+              Risk Assessment
+            </h3>
+            <p>
+              <strong>Risk Level:</strong>{" "}
+              <span className="capitalize">
+                {riskResult.riskLevel}
+              </span>
+            </p>
+            <p>
+              <strong>Confidence:</strong>{" "}
+              {(riskResult.confidence * 100).toFixed(0)}%
+            </p>
+            <p className="text-sm text-gray-600 mt-1">
+              Factors: {riskResult.factors.join(", ")}
+            </p>
+          </div>
+        )}
 
-        {/* Admin-only: Create Alert */}
+        {/* Admin: Create Alert */}
         {isAdmin && (
           <CreateAlertForm onCreated={loadAlerts} />
         )}
 
-        {/* Errors */}
+        {/* Error */}
         {error && (
           <p className="text-red-600">{error}</p>
         )}
