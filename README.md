@@ -68,3 +68,12 @@ A full-stack Disaster Alert Platform built using the MERN Stack, extended with g
 - cd client
 - npm install
 - npm run dev
+
+### Python setup
+
+- cd ml-service
+- python -m venv .venv
+- .\.venv\Scripts\activate
+- python -m pip install --upgrade pip
+- python -m pip install -r requirements.txt
+- python -m uvicorn main:app --reload --port 8000
