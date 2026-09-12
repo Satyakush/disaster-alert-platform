@@ -4,6 +4,8 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import Unauthorized from "./pages/Unauthorized";
+
 
 export default function App() {
   return (
@@ -23,6 +25,13 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Unauthorized */}
+           <Route
+            path="/unauthorized"
+           element={<Unauthorized />}
+          />
+
 
           {/* Default */}
           <Route path="/" element={<Navigate to="/login" replace />} />

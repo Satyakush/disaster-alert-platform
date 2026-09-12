@@ -1,8 +1,9 @@
 import express from "express";
 import { analyzeRisk } from "../controllers/riskController.js";
+import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/analyze", analyzeRisk);
+router.post("/analyze", authMiddleware, analyzeRisk);
 
 export default router;
