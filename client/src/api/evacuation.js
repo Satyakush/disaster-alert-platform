@@ -13,3 +13,10 @@ export const fetchEvacuationGuidance = async ({ disasterType, severity }) => {
   });
   return res.data;
 };
+
+export const fetchEvacuationRoute = async ({ originLatitude, originLongitude, destinationLatitude, destinationLongitude }) => {
+  const res = await api.get("/evacuation/route", {
+    params: { originLatitude, originLongitude, destinationLatitude, destinationLongitude },
+  });
+  return res.data;
+};
