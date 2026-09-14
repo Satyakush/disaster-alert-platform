@@ -82,6 +82,10 @@ const incidentReportSchema = new mongoose.Schema(
     verifiedAt: {
       type: Date,
     },
+    linkedAlert: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Alert",
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
