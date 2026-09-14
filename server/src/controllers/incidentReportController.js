@@ -1,4 +1,17 @@
 import IncidentReport from "../models/incidentReport.js";
+import Alert from "../models/alert.js";
+
+const priorityToSeverity = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+  critical: "critical",
+};
+
+const emitAlertEvent = (req, event, payload) => {
+  const io = req.app.get("io");
+  if (io) io.to("alerts").emit(event, payload);
+};
 
 export const createIncidentReport = async (req, res) => {
   try {
@@ -56,12 +69,10 @@ export const getIncidentReports = async (req, res) => {
     const reports = await IncidentReport.find(filter)
       .sort({ createdAt: -1 })
       .populate("createdBy", "name email role")
-      .populate("verifiedBy", "name email role");
+      .populate("verifiedBy", "name email role")
+      .populate("linkedAlert", "title severity status");
 
-    return res.status(200).json({
-      count: reports.length,
-      reports,
-    });
+    return res.status(200).json({ count: reports.length, reports });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Failed to fetch incident reports" });
@@ -90,13 +101,13 @@ export const updateIncidentReportStatus = async (req, res) => {
       update.verifiedAt = null;
     }
 
-    const report = await IncidentReport.findByIdAndUpdate(
-      req.params.id,
-      update,
-      { new: true, runValidators: true }
-    )
+    const report = await IncidentReport.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+      runValidators: true,
+    })
       .populate("createdBy", "name email role")
-      .populate("verifiedBy", "name email role");
+      .populate("verifiedBy", "name email role")
+      .populate("linkedAlert", "title severity status");
 
     if (!report) {
       return res.status(404).json({ message: "Incident report not found" });
@@ -113,5 +124,60 @@ export const updateIncidentReportStatus = async (req, res) => {
 
     console.error(error);
     return res.status(500).json({ message: "Failed to update incident report" });
+  }
+};
+
+export const convertIncidentReportToAlert = async (req, res) => {
+  try {
+    const report = await IncidentReport.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({ message: "Incident report not found" });
+    }
+
+    if (report.status !== "verified") {
+      return res.status(400).json({ message: "Only verified reports can become alerts" });
+    }
+
+    if (report.linkedAlert) {
+      return res.status(409).json({ message: "This report is already linked to an alert" });
+    }
+
+    const alert = await Alert.create({
+      title: report.title,
+      description: report.description,
+      disasterType: report.disasterType,
+      severity: priorityToSeverity[report.priority],
+      status: "active",
+      location: report.location,
+      coordinates: report.coordinates,
+      source: "citizen",
+      urgency: report.priority === "critical" ? "immediate" : "expected",
+      certainty: "observed",
+      effectiveAt: new Date(),
+      instructions: [],
+      createdBy: req.user.id,
+    });
+
+    report.linkedAlert = alert._id;
+    await report.save();
+
+    await alert.populate("createdBy", "name email role");
+    await report.populate("linkedAlert", "title severity status");
+
+    emitAlertEvent(req, "alert:created", alert);
+
+    return res.status(201).json({
+      message: "Verified incident converted to alert successfully",
+      alert,
+      report,
+    });
+  } catch (error) {
+    if (error.name === "ValidationError" || error.name === "CastError") {
+      return res.status(400).json({ message: error.message });
+    }
+
+    console.error(error);
+    return res.status(500).json({ message: "Failed to convert incident report" });
   }
 };
