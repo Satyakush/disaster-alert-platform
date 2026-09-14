@@ -14,3 +14,8 @@ export const updateReportStatus = async (id, data) => {
   const res = await api.patch(`/reports/${id}/status`, data);
   return res.data;
 };
+
+export const convertReportToAlert = async (id) => {
+  const res = await api.post(`/reports/${id}/convert-to-alert`);
+  return res.data;
+};
