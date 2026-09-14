@@ -1,9 +1,7 @@
 import Alert from "../models/alert.js";
 
 const getRoutingServiceUrl = () => (process.env.ROUTING_SERVICE_URL || "https://router.project-osrm.org").replace(/\/$/, "");
-
 const severityWeight = { low: 1, medium: 2, high: 4, critical: 7 };
-
 const toRadians = (value) => (value * Math.PI) / 180;
 
 const distanceMeters = (latitudeA, longitudeA, latitudeB, longitudeB) => {
@@ -34,13 +32,7 @@ const getRouteHazardExposure = (route, hazards) => {
       const coverage = affectedPoints / points.length;
       const weight = severityWeight[hazard.severity] || 1;
       score += coverage * weight * 100;
-      exposed.push({
-        id: hazard._id,
-        title: hazard.title,
-        disasterType: hazard.disasterType,
-        severity: hazard.severity,
-        coverage: Math.round(coverage * 100),
-      });
+      exposed.push({ id: hazard._id, title: hazard.title, disasterType: hazard.disasterType, severity: hazard.severity, coverage: Math.round(coverage * 100) });
     }
   });
 
@@ -59,8 +51,8 @@ export const getEvacuationRoute = async (req, res) => {
     const originLongitude = Number(req.query.originLongitude);
     const destinationLatitude = Number(req.query.destinationLatitude);
     const destinationLongitude = Number(req.query.destinationLongitude);
-
     const values = [originLatitude, originLongitude, destinationLatitude, destinationLongitude];
+
     if (values.some((value) => !Number.isFinite(value)) || originLatitude < -90 || originLatitude > 90 || destinationLatitude < -90 || destinationLatitude > 90 || originLongitude < -180 || originLongitude > 180 || destinationLongitude < -180 || destinationLongitude > 180) {
       return res.status(400).json({ message: "Valid origin and destination coordinates are required" });
     }
@@ -68,30 +60,19 @@ export const getEvacuationRoute = async (req, res) => {
     const coordinates = `${originLongitude},${originLatitude};${destinationLongitude},${destinationLatitude}`;
     const url = `${getRoutingServiceUrl()}/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=true&alternatives=true`;
     const response = await fetch(url);
-
     if (!response.ok) return res.status(502).json({ message: "Routing service returned an error" });
 
     const data = await response.json();
     const candidates = data.routes || [];
     if (candidates.length === 0) return res.status(404).json({ message: "No drivable route found" });
 
-    const hazards = await Alert.find({
-      status: { $in: ["active", "escalated"] },
-      coordinates: { $exists: true },
-    }).select("title disasterType severity radius coordinates").lean();
+    const hazards = await Alert.find({ status: { $in: ["active", "escalated"] }, coordinates: { $exists: true } }).select("title disasterType severity radius coordinates").lean();
+    const evaluated = candidates.map((candidate) => ({ route: candidate, exposure: getRouteHazardExposure(candidate, hazards) }));
+    const fastest = evaluated.reduce((best, current) => current.route.duration < best.route.duration ? current : best, evaluated[0]);
 
-    const evaluated = candidates.map((candidate) => ({
-      route: candidate,
-      exposure: getRouteHazardExposure(candidate, hazards),
-    }));
-
-    evaluated.sort((a, b) => {
-      if (a.exposure.score !== b.exposure.score) return a.exposure.score - b.exposure.score;
-      return a.route.duration - b.route.duration;
-    });
-
+    evaluated.sort((a, b) => a.exposure.score - b.exposure.score || a.route.duration - b.route.duration);
     const selected = evaluated[0];
-    const hazardAvoided = evaluated.length > 1 && selected.exposure.score < evaluated[0].exposure.score;
+    const hazardAvoided = selected !== fastest && selected.exposure.score < fastest.exposure.score;
 
     return res.status(200).json({
       provider: "OSRM",
@@ -107,7 +88,9 @@ export const getEvacuationRoute = async (req, res) => {
       hazardAvoided,
       advisory: selected.exposure.warning
         ? "This route still intersects one or more active hazard zones. Follow official emergency instructions and local responder directions."
-        : "The selected route avoids the active hazard zones detected by the platform at calculation time. Conditions can change rapidly.",
+        : hazardAvoided
+          ? "The selected route is longer than the fastest option but reduces exposure to active hazard zones detected by the platform."
+          : "The selected route avoids the active hazard zones detected by the platform at calculation time. Conditions can change rapidly.",
     });
   } catch (error) {
     console.error(error);
