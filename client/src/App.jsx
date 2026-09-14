@@ -4,6 +4,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ReportIncident from "./pages/ReportIncident";
 import ReportReview from "./pages/ReportReview";
+import ResponseTeam from "./pages/ResponseTeam";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import Unauthorized from "./pages/Unauthorized";
@@ -36,6 +37,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <ReportReview />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/response-team"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <ResponseTeam />
               </ProtectedRoute>
             }
           />
