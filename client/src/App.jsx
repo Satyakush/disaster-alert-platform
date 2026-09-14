@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ReportIncident from "./pages/ReportIncident";
+import ReportReview from "./pages/ReportReview";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import Unauthorized from "./pages/Unauthorized";
@@ -27,6 +28,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ReportIncident />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <ReportReview />
               </ProtectedRoute>
             }
           />
