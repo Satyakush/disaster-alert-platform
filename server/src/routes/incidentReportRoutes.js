@@ -3,6 +3,7 @@ import {
   createIncidentReport,
   getIncidentReports,
   updateIncidentReportStatus,
+  convertIncidentReportToAlert,
 } from "../controllers/incidentReportController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import adminMiddleware from "../middlewares/adminMiddleware.js";
@@ -16,6 +17,12 @@ router.patch(
   authMiddleware,
   adminMiddleware,
   updateIncidentReportStatus
+);
+router.post(
+  "/:id/convert-to-alert",
+  authMiddleware,
+  adminMiddleware,
+  convertIncidentReportToAlert
 );
 
 export default router;
