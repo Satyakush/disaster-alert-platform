@@ -2,18 +2,19 @@ import axios from "axios";
 
 export const analyzeRisk = async (req, res) => {
   try {
-    const region = req.body;
+    const { region, hazard } = req.body;
 
-    if (!region) {
-      return res.status(400).json({
-        message: "Region data is required",
-      });
+    if (!region || typeof region !== "object") {
+      return res.status(400).json({ message: "Region data is required" });
     }
 
+    const mlServiceUrl = process.env.ML_SERVICE_URL || "http://localhost:8000";
+
     const mlResponse = await axios.post(
-      "http://localhost:8000/analyze-risk",
+      `${mlServiceUrl.replace(/\/$/, "")}/analyze-risk`,
       {
         region,
+        hazard: hazard || {},
         meta: {
           source: "map-selection",
         },
@@ -25,8 +26,10 @@ export const analyzeRisk = async (req, res) => {
   } catch (error) {
     console.error("Risk analysis error:", error.message);
 
-    return res.status(500).json({
-      message: "Risk analysis failed",
-    });
+    if (error.response?.data) {
+      return res.status(error.response.status || 502).json(error.response.data);
+    }
+
+    return res.status(502).json({ message: "Risk analysis service unavailable" });
   }
 };
