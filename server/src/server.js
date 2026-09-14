@@ -9,6 +9,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import alertRoutes from "./routes/alertRoutes.js";
 import riskRoutes from "./routes/riskRoutes.js";
 import incidentReportRoutes from "./routes/incidentReportRoutes.js";
+import shelterRoutes from "./routes/shelterRoutes.js";
 
 const PORT = process.env.PORT || 5000;
 const clientOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
@@ -43,6 +44,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/risk", riskRoutes);
 app.use("/api/reports", incidentReportRoutes);
+app.use("/api/shelters", shelterRoutes);
 
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
