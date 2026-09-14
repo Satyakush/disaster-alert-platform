@@ -8,6 +8,7 @@ import connectDB from "./config/db.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import alertRoutes from "./routes/alertRoutes.js";
 import riskRoutes from "./routes/riskRoutes.js";
+import incidentReportRoutes from "./routes/incidentReportRoutes.js";
 
 const PORT = process.env.PORT || 5000;
 const clientOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
@@ -32,13 +33,8 @@ io.on("connection", (socket) => {
     timestamp: new Date().toISOString(),
   });
 
-  socket.on("alerts:join", () => {
-    socket.join("alerts");
-  });
-
-  socket.on("alerts:leave", () => {
-    socket.leave("alerts");
-  });
+  socket.on("alerts:join", () => socket.join("alerts"));
+  socket.on("alerts:leave", () => socket.leave("alerts"));
 });
 
 connectDB();
@@ -46,6 +42,7 @@ connectDB();
 app.use("/api/admin", adminRoutes);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/risk", riskRoutes);
+app.use("/api/reports", incidentReportRoutes);
 
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
