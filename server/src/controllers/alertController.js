@@ -26,6 +26,11 @@ const pickFields = (body) =>
       .map((field) => [field, body[field]])
   );
 
+const emitAlertEvent = (req, event, alert) => {
+  const io = req.app.get("io");
+  if (io) io.to("alerts").emit(event, alert);
+};
+
 export const createAlert = async (req, res) => {
   try {
     const {
@@ -74,6 +79,8 @@ export const createAlert = async (req, res) => {
     });
 
     await alert.populate("createdBy", "name email role");
+    emitAlertEvent(req, "alert:created", alert);
+
     return res.status(201).json({ message: "Alert created successfully", alert });
   } catch (error) {
     if (error.name === "ValidationError") {
@@ -121,6 +128,7 @@ export const updateAlert = async (req, res) => {
       return res.status(404).json({ message: "Alert not found" });
     }
 
+    emitAlertEvent(req, "alert:updated", alert);
     return res.status(200).json({ message: "Alert updated successfully", alert });
   } catch (error) {
     if (error.name === "ValidationError" || error.name === "CastError") {
@@ -150,6 +158,7 @@ export const updateAlertStatus = async (req, res) => {
       return res.status(404).json({ message: "Alert not found" });
     }
 
+    emitAlertEvent(req, "alert:status-changed", alert);
     return res.status(200).json({ message: "Alert status updated successfully", alert });
   } catch (error) {
     if (error.name === "ValidationError" || error.name === "CastError") {
@@ -169,6 +178,7 @@ export const deleteAlert = async (req, res) => {
       return res.status(404).json({ message: "Alert not found" });
     }
 
+    emitAlertEvent(req, "alert:deleted", { id: alert._id });
     return res.status(200).json({ message: "Alert deleted successfully" });
   } catch (error) {
     console.error(error);
