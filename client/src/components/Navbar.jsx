@@ -1,5 +1,6 @@
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { FileWarning, LayoutDashboard, LogOut } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -11,22 +12,42 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-slate-900 text-white px-6 py-4 shadow">
-      <div className="max-w-6xl mx-auto flex justify-between items-center">
-        <h1 className="text-lg font-semibold tracking-wide">
-          Disaster Alert Platform
-        </h1>
+    <nav className="border-b border-slate-800 bg-slate-950 text-white shadow-lg">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="flex items-center gap-3 text-left"
+        >
+          <div className="rounded-xl bg-cyan-500 p-2 text-slate-950">
+            <FileWarning size={20} />
+          </div>
+          <div>
+            <h1 className="text-base font-bold tracking-wide">Disaster Intelligence</h1>
+            <p className="text-xs text-slate-500">Early Warning Platform</p>
+          </div>
+        </button>
 
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-300 capitalize">
-            {user?.role}
-          </span>
-
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="hidden items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white sm:flex"
+          >
+            <LayoutDashboard size={16} />
+            Dashboard
+          </button>
+          <button
+            onClick={() => navigate("/report")}
+            className="rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+          >
+            Report Incident
+          </button>
+          <span className="hidden text-sm capitalize text-slate-400 md:block">{user?.role}</span>
           <button
             onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 px-4 py-1.5 rounded text-sm font-medium"
+            className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-red-400"
+            aria-label="Logout"
           >
-            Logout
+            <LogOut size={18} />
           </button>
         </div>
       </div>
