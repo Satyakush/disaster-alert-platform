@@ -1,15 +1,30 @@
 import User from "../models/user.js";
 
+const publicUserFields = "name email role createdAt";
+
 export const getResponseTeam = async (req, res) => {
   try {
     const members = await User.find({ role: { $in: ["responder", "admin"] } })
-      .select("name email role createdAt")
+      .select(publicUserFields)
       .sort({ role: 1, name: 1 });
 
     res.json({ members });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to load response team" });
+  }
+};
+
+export const getAssignableUsers = async (req, res) => {
+  try {
+    const users = await User.find({ role: "user" })
+      .select(publicUserFields)
+      .sort({ name: 1 });
+
+    res.json({ users });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to load eligible users" });
   }
 };
 
@@ -24,6 +39,10 @@ export const assignResponderRole = async (req, res) => {
 
     if (user.role === "admin") {
       return res.status(400).json({ message: "Admin role cannot be changed here" });
+    }
+
+    if (user.role === "responder") {
+      return res.status(400).json({ message: "User is already a responder" });
     }
 
     user.role = "responder";
