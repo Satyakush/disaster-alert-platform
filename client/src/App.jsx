@@ -28,7 +28,7 @@ export default function App() {
           <Route
             path="/responder"
             element={
-              <ProtectedRoute allowedRoles={["responder"]}>
+              <ProtectedRoute allowedRoles={["responder", "admin"]}>
                 <ResponderDashboard />
               </ProtectedRoute>
             }
