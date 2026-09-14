@@ -5,6 +5,11 @@ export const fetchResponseTeam = async () => {
   return res.data;
 };
 
+export const fetchAssignableUsers = async () => {
+  const res = await api.get("/admin/response-team/eligible");
+  return res.data;
+};
+
 export const assignResponderRole = async (id) => {
   const res = await api.patch(`/admin/response-team/${id}/assign`);
   return res.data;
