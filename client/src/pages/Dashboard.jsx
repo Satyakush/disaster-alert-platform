@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Activity, AlertTriangle, BellRing, ShieldAlert } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { fetchAlerts } from "../api/alerts";
+import { fetchReports } from "../api/reports";
+import { fetchShelters } from "../api/shelters";
 import { analyzeRisk } from "../api/risk";
 import { connectToAlerts, disconnectFromAlerts, socket } from "../api/socket";
 import Navbar from "../components/Navbar";
@@ -20,25 +22,33 @@ export default function Dashboard() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const [alerts, setAlerts] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [shelters, setShelters] = useState([]);
   const [error, setError] = useState("");
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [riskResult, setRiskResult] = useState(null);
   const [riskLoading, setRiskLoading] = useState(false);
   const [filters, setFilters] = useState({ status: "", disasterType: "", severity: "" });
 
-  const loadAlerts = async () => {
+  const loadData = async () => {
     try {
-      const data = await fetchAlerts();
-      setAlerts(data.alerts || []);
+      const [alertsData, reportsData, sheltersData] = await Promise.all([
+        fetchAlerts(),
+        fetchReports({ status: "verified" }),
+        fetchShelters({ status: "open" }),
+      ]);
+      setAlerts(alertsData.alerts || []);
+      setReports(reportsData.reports || []);
+      setShelters(sheltersData.shelters || []);
       setError("");
     } catch (err) {
       console.error(err);
-      setError("Failed to load alerts");
+      setError("Failed to load disaster intelligence data");
     }
   };
 
   useEffect(() => {
-    loadAlerts();
+    loadData();
     connectToAlerts();
 
     const handleCreated = (alert) => setAlerts((current) => [alert, ...current]);
@@ -48,17 +58,28 @@ export default function Dashboard() {
       setAlerts((current) => current.map((item) => (item._id === alert._id ? alert : item)));
     const handleDeleted = ({ id }) =>
       setAlerts((current) => current.filter((item) => item._id !== id));
+    const handleShelterCreated = (shelter) => setShelters((current) => [shelter, ...current]);
+    const handleShelterUpdated = (shelter) =>
+      setShelters((current) => current.map((item) => (item._id === shelter._id ? shelter : item)));
+    const handleShelterDeleted = ({ id }) =>
+      setShelters((current) => current.filter((item) => item._id !== id));
 
     socket.on("alert:created", handleCreated);
     socket.on("alert:updated", handleUpdated);
     socket.on("alert:status-changed", handleStatusChanged);
     socket.on("alert:deleted", handleDeleted);
+    socket.on("shelter:created", handleShelterCreated);
+    socket.on("shelter:updated", handleShelterUpdated);
+    socket.on("shelter:deleted", handleShelterDeleted);
 
     return () => {
       socket.off("alert:created", handleCreated);
       socket.off("alert:updated", handleUpdated);
       socket.off("alert:status-changed", handleStatusChanged);
       socket.off("alert:deleted", handleDeleted);
+      socket.off("shelter:created", handleShelterCreated);
+      socket.off("shelter:updated", handleShelterUpdated);
+      socket.off("shelter:deleted", handleShelterDeleted);
       disconnectFromAlerts();
     };
   }, []);
@@ -95,7 +116,6 @@ export default function Dashboard() {
   const activeCount = alerts.filter((alert) => ["active", "escalated"].includes(alert.status)).length;
   const criticalCount = alerts.filter((alert) => alert.severity === "critical").length;
   const resolvedCount = alerts.filter((alert) => alert.status === "resolved").length;
-
   const riskLevel = riskResult?.riskLevel || "low";
   const riskScore = Number(riskResult?.riskScore || 0);
 
@@ -123,7 +143,12 @@ export default function Dashboard() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <MapView onRegionSelect={setSelectedRegion} />
+          <MapView
+            onRegionSelect={setSelectedRegion}
+            alerts={alerts}
+            reports={reports}
+            shelters={shelters}
+          />
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3">
@@ -155,11 +180,9 @@ export default function Dashboard() {
                     <div className="h-2 rounded-full bg-slate-900 transition-all" style={{ width: `${riskScore}%` }} />
                   </div>
                 </div>
-                <div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Confidence</span>
-                    <span className="font-semibold text-slate-800">{Math.round((riskResult.confidence || 0) * 100)}%</span>
-                  </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Confidence</span>
+                  <span className="font-semibold text-slate-800">{Math.round((riskResult.confidence || 0) * 100)}%</span>
                 </div>
                 <div>
                   <p className="mb-2 text-sm font-semibold text-slate-800">Risk factors</p>
@@ -187,7 +210,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {isAdmin && <CreateAlertForm onCreated={loadAlerts} />}
+        {isAdmin && <CreateAlertForm onCreated={loadData} />}
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
