@@ -9,6 +9,7 @@ import { connectToAlerts, disconnectFromAlerts, socket } from "../api/socket";
 import Navbar from "../components/Navbar";
 import MapView from "../components/MapView";
 import CreateAlertForm from "../components/createAlertForm";
+import ShelterManagement from "../components/ShelterManagement";
 import AlertCard from "../components/AlertCard";
 import EvacuationPanel from "../components/EvacuationPanel";
 
@@ -133,6 +134,7 @@ export default function Dashboard() {
 
         <EvacuationPanel alert={selectedAlert} onRouteChange={setRoute} />
         {isAdmin && <CreateAlertForm onCreated={loadData} selectedRegion={selectedRegion} />}
+        {isAdmin && <ShelterManagement shelters={shelters} selectedRegion={selectedRegion} onChanged={loadData} />}
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div><h2 className="text-xl font-bold text-slate-900">Active intelligence feed</h2><p className="text-sm text-slate-500">Live alerts are updated automatically.</p></div><div className="grid grid-cols-1 gap-2 sm:grid-cols-3"><FilterSelect value={filters.status} onChange={(value) => setFilters({ ...filters, status: value })} options={["active", "escalated", "resolved", "archived", "draft"]} placeholder="All statuses" /><FilterSelect value={filters.disasterType} onChange={(value) => setFilters({ ...filters, disasterType: value })} options={["flood", "cyclone", "earthquake", "wildfire", "heatwave", "storm", "landslide", "tsunami", "industrial", "other"]} placeholder="All hazards" /><FilterSelect value={filters.severity} onChange={(value) => setFilters({ ...filters, severity: value })} options={["low", "medium", "high", "critical"]} placeholder="All severity" /></div></div>
