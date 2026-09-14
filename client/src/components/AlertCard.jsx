@@ -2,6 +2,7 @@ import { useState } from "react";
 import { MapPin, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { deleteAlert, updateAlert } from "../api/alerts";
+import ResponseAssignment from "./ResponseAssignment";
 
 const disasterTypes = ["flood", "cyclone", "earthquake", "wildfire", "heatwave", "storm", "landslide", "tsunami", "industrial", "other"];
 const severities = ["low", "medium", "high", "critical"];
@@ -68,7 +69,13 @@ export default function AlertCard({ alert, setAlerts, onSelect, selected }) {
         {isUpdated && <p className="text-xs text-blue-500">Updated: {updatedTime}</p>}
         <p className="mt-4 text-xs font-semibold text-red-600">View evacuation intelligence →</p>
       </button>
-      {isAdmin && <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4"><button onClick={() => setIsEditing(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-sm text-white hover:bg-amber-600"><Pencil size={14} /> Edit</button><button onClick={handleDelete} className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700"><Trash2 size={14} /> Delete</button></div>}
+      {isAdmin && <>
+        <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4">
+          <button onClick={() => setIsEditing(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-sm text-white hover:bg-amber-600"><Pencil size={14} /> Edit</button>
+          <button onClick={handleDelete} className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700"><Trash2 size={14} /> Delete</button>
+        </div>
+        <ResponseAssignment alert={alert} />
+      </>}
     </div>
   );
 }
