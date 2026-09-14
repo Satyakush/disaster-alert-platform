@@ -36,10 +36,13 @@ export default function Navbar() {
           )}
           {user?.role === "admin" && (
             <>
+              <button onClick={() => navigate("/responder")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white lg:flex">
+                <Radio size={16} /> Operations
+              </button>
               <button onClick={() => navigate("/reports")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white md:flex">
                 <ShieldCheck size={16} /> Verify Reports
               </button>
-              <button onClick={() => navigate("/response-team")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white lg:flex">
+              <button onClick={() => navigate("/response-team")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white xl:flex">
                 <Users size={16} /> Response Team
               </button>
             </>
