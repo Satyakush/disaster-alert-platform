@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import ReportIncident from "./pages/ReportIncident";
 import ReportReview from "./pages/ReportReview";
 import ResponseTeam from "./pages/ResponseTeam";
+import ResponderDashboard from "./pages/ResponderDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import Unauthorized from "./pages/Unauthorized";
@@ -19,8 +20,16 @@ export default function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={["user", "admin"]}>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/responder"
+            element={
+              <ProtectedRoute allowedRoles={["responder"]}>
+                <ResponderDashboard />
               </ProtectedRoute>
             }
           />
