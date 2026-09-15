@@ -7,6 +7,7 @@ import ReportReview from "./pages/ReportReview";
 import ResponseTeam from "./pages/ResponseTeam";
 import ResponderDashboard from "./pages/ResponderDashboard";
 import Resources from "./pages/Resources";
+import Infrastructure from "./pages/Infrastructure";
 import Analytics from "./pages/Analytics";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/dashboard" element={<ProtectedRoute allowedRoles={["user", "admin"]}><Dashboard /></ProtectedRoute>} />
           <Route path="/responder" element={<ProtectedRoute allowedRoles={["responder", "admin"]}><ResponderDashboard /></ProtectedRoute>} />
           <Route path="/resources" element={<ProtectedRoute allowedRoles={["responder", "admin"]}><Resources /></ProtectedRoute>} />
+          <Route path="/infrastructure" element={<ProtectedRoute allowedRoles={["responder", "admin"]}><Infrastructure /></ProtectedRoute>} />
           <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
           <Route path="/report" element={<ProtectedRoute><ReportIncident /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute allowedRoles={["admin"]}><ReportReview /></ProtectedRoute>} />
