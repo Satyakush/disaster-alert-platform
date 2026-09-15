@@ -84,11 +84,11 @@ export default function Dashboard() {
     loadData();
     connectToAlerts();
 
-    const handleCreated = (alert) => setAlerts((current) => [alert, ...current]);
+    const handleCreated = (alert) => setAlerts((current) => [alert, ...current.filter((item) => item._id !== alert._id)]);
     const handleUpdated = (alert) => setAlerts((current) => current.map((item) => (item._id === alert._id ? alert : item)));
     const handleStatusChanged = (alert) => setAlerts((current) => current.map((item) => (item._id === alert._id ? alert : item)));
     const handleDeleted = ({ id }) => setAlerts((current) => current.filter((item) => item._id !== id));
-    const handleShelterCreated = (shelter) => setShelters((current) => [shelter, ...current]);
+    const handleShelterCreated = (shelter) => setShelters((current) => [shelter, ...current.filter((item) => item._id !== shelter._id)]);
     const handleShelterUpdated = (shelter) => setShelters((current) => current.map((item) => (item._id === shelter._id ? shelter : item)));
     const handleShelterDeleted = ({ id }) => setShelters((current) => current.filter((item) => item._id !== id));
 
@@ -113,52 +113,33 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!selectedRegion) return;
-    const fetchRisk = async () => {
-      setRiskLoading(true);
-      setRiskError("");
-      try {
-        const region = {
-          ...selectedRegion,
-          exposure: riskInputs.exposure,
-          vulnerability: riskInputs.vulnerability,
-          historicalRisk: riskInputs.historicalRisk,
-        };
-        const result = await analyzeRisk(region, {
-          type: riskInputs.type,
-          intensity: riskInputs.intensity,
-          probability: riskInputs.probability,
-        });
-        setRiskResult(result);
-      } catch (err) {
-        console.error("Risk analysis failed:", err);
-        setRiskResult(null);
-        setRiskError(err.response?.data?.message || "Risk analysis service unavailable");
-      } finally {
-        setRiskLoading(false);
-      }
-    };
-    fetchRisk();
-  }, [selectedRegion]);
+    if (!selectedAlert?.coordinates?.coordinates?.length === 2) return;
+    const [lng, lat] = selectedAlert.coordinates.coordinates;
+    setSelectedRegion({ lat, lng, radius: Number(selectedAlert.radius) || 3000 });
+    setRiskInputs((current) => ({
+      ...current,
+      type: hazards.some(([value]) => value === selectedAlert.disasterType) ? selectedAlert.disasterType : current.type,
+      intensity: severityDefaults[selectedAlert.severity]?.intensity || current.intensity,
+      probability: severityDefaults[selectedAlert.severity]?.probability || current.probability,
+    }));
+    setRiskResult(null);
+    setRiskError("");
+  }, [selectedAlert]);
 
   useEffect(() => {
-    if (!selectedAlert) return;
-    const currentAlert = alerts.find((alert) => alert._id === selectedAlert._id);
-    if (currentAlert) setSelectedAlert(currentAlert);
-  }, [alerts, selectedAlert]);
+    if (!selectedRegion) return;
+    setRiskResult(null);
+    setRiskError("");
+  }, [selectedRegion]);
 
   const handleRegionSelect = (region) => {
     setSelectedRegion(region);
-    setRiskResult(null);
-    setRiskError("");
-  };
-
-  const handleHazardChange = (type) => {
-    setRiskInputs((current) => ({ ...current, type }));
+    setSelectedAlert(null);
   };
 
   const applySeverityPreset = (severity) => {
     const values = severityDefaults[severity];
+    if (!values) return;
     setRiskInputs((current) => ({ ...current, intensity: values.intensity, probability: values.probability }));
   };
 
@@ -208,19 +189,7 @@ export default function Dashboard() {
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
           <MapView onRegionSelect={handleRegionSelect} alerts={alerts} reports={reports} shelters={shelters} route={route} />
-          <RiskPanel
-            selectedRegion={selectedRegion}
-            riskInputs={riskInputs}
-            setRiskInputs={setRiskInputs}
-            onHazardChange={handleHazardChange}
-            onPreset={applySeverityPreset}
-            onAnalyze={analyzeSelectedRisk}
-            riskResult={riskResult}
-            riskLoading={riskLoading}
-            riskError={riskError}
-            riskLevel={riskLevel}
-            riskScore={riskScore}
-          />
+          <RiskPanel selectedRegion={selectedRegion} riskInputs={riskInputs} setRiskInputs={setRiskInputs} onPreset={applySeverityPreset} onAnalyze={analyzeSelectedRisk} riskResult={riskResult} riskLoading={riskLoading} riskError={riskError} riskLevel={riskLevel} riskScore={riskScore} />
         </section>
 
         <EvacuationPanel alert={selectedAlert} onRouteChange={setRoute} />
@@ -237,7 +206,7 @@ export default function Dashboard() {
   );
 }
 
-function RiskPanel({ selectedRegion, riskInputs, setRiskInputs, onHazardChange, onPreset, onAnalyze, riskResult, riskLoading, riskError, riskLevel, riskScore }) {
+function RiskPanel({ selectedRegion, riskInputs, setRiskInputs, onPreset, onAnalyze, riskResult, riskLoading, riskError, riskLevel, riskScore }) {
   const update = (field, value) => setRiskInputs((current) => ({ ...current, [field]: Number(value) }));
 
   return (
@@ -247,9 +216,9 @@ function RiskPanel({ selectedRegion, riskInputs, setRiskInputs, onHazardChange, 
         {riskResult && <span className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize ${riskStyles[riskLevel] || riskStyles.low}`}>{riskLevel}</span>}
       </div>
 
-      {!selectedRegion ? <div className="mt-6 rounded-xl bg-slate-50 p-5 text-sm text-slate-500">Search for a city or click the map, then choose a hazard scenario.</div> : <div className="mt-5 space-y-5">
+      <div className="mt-5 space-y-5">
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm font-medium text-slate-700">Hazard type<select value={riskInputs.type} onChange={(event) => onHazardChange(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 capitalize outline-none focus:border-slate-400">{hazards.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <label className="text-sm font-medium text-slate-700">Hazard type<select value={riskInputs.type} onChange={(event) => setRiskInputs((current) => ({ ...current, type: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 capitalize outline-none focus:border-slate-400">{hazards.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
           <label className="text-sm font-medium text-slate-700">Scenario severity<select defaultValue="baseline" onChange={(event) => event.target.value !== "baseline" && onPreset(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 capitalize outline-none focus:border-slate-400"><option value="baseline">Custom / baseline</option><option value="low">Low</option><option value="medium">Moderate</option><option value="high">High</option><option value="critical">Extreme</option></select></label>
         </div>
 
@@ -261,7 +230,7 @@ function RiskPanel({ selectedRegion, riskInputs, setRiskInputs, onHazardChange, 
           <RangeField label="Historical risk" value={riskInputs.historicalRisk} onChange={(value) => update("historicalRisk", value)} />
         </div>
 
-        <button onClick={onAnalyze} disabled={riskLoading} className="w-full rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">{riskLoading ? "Analyzing scenario..." : "Analyze risk scenario"}</button>
+        <button onClick={onAnalyze} disabled={!selectedRegion || riskLoading} className="w-full rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">{riskLoading ? "Analyzing scenario..." : selectedRegion ? "Analyze risk scenario" : "Select an area to analyze"}</button>
 
         {riskError && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{riskError}</div>}
 
@@ -270,8 +239,8 @@ function RiskPanel({ selectedRegion, riskInputs, setRiskInputs, onHazardChange, 
           <div className="flex justify-between text-sm"><span className="text-slate-500">Model confidence</span><span className="font-semibold text-slate-800">{Math.round((riskResult.confidence || 0) * 100)}%</span></div>
           <div><p className="mb-2 text-sm font-semibold text-slate-800">Explainable risk factors</p><div className="space-y-2">{(riskResult.factors || []).map((factor) => <div key={factor.name} className="rounded-lg bg-slate-50 p-3"><div className="flex justify-between gap-3 text-xs"><span className="capitalize text-slate-600">{factor.name.replaceAll("_", " ")}</span><span className="font-semibold text-slate-900">{Number(factor.value).toFixed(0)} · {Number(factor.weight * 100).toFixed(0)}% weight</span></div><div className="mt-1 text-[11px] text-slate-400">Contribution: {Number(factor.contribution).toFixed(1)}</div></div>)}</div></div>
           {riskResult.recommendedActions?.length > 0 && <div><p className="mb-2 text-sm font-semibold text-slate-800">Recommended actions</p><ul className="space-y-2 text-sm text-slate-600">{riskResult.recommendedActions.slice(0, 4).map((action) => <li key={action}>• {action}</li>)}</ul></div>}
-        </div> : null}
-      </div>}
+        </div> : <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Choose a hazard and scenario inputs, then run the assessment to generate explainable risk intelligence.</div>}
+      </div>
     </div>
   );
 }
