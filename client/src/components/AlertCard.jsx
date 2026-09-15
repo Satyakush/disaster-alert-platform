@@ -18,14 +18,13 @@ export default function AlertCard({ alert, setAlerts, onSelect, selected }) {
     disasterType: alert.disasterType,
     severity: alert.severity,
     location: alert.location,
-    actualOutcome: {
-      severity: alert.actualOutcome?.severity || "",
-      impact: alert.actualOutcome?.impact || "",
-    },
+    actualOutcome: { severity: alert.actualOutcome?.severity || "", impact: alert.actualOutcome?.impact || "" },
   });
   const createdTime = new Date(alert.createdAt).toLocaleString();
   const updatedTime = new Date(alert.updatedAt).toLocaleString();
   const isUpdated = alert.updatedAt !== alert.createdAt;
+  const impact = alert.impact || {};
+  const hasImpact = Object.values(impact).some((value) => Number(value) > 0);
 
   const handleDelete = async () => {
     if (!window.confirm("Delete this alert?")) return;
@@ -40,9 +39,8 @@ export default function AlertCard({ alert, setAlerts, onSelect, selected }) {
   const handleUpdate = async () => {
     try {
       const payload = { ...form };
-      if (!form.actualOutcome.severity && !form.actualOutcome.impact) {
-        delete payload.actualOutcome;
-      } else if (!form.actualOutcome.severity || !form.actualOutcome.impact) {
+      if (!form.actualOutcome.severity && !form.actualOutcome.impact) delete payload.actualOutcome;
+      else if (!form.actualOutcome.severity || !form.actualOutcome.impact) {
         window.alert("Select both actual severity and actual impact");
         return;
       }
@@ -61,22 +59,9 @@ export default function AlertCard({ alert, setAlerts, onSelect, selected }) {
         <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mb-2 w-full rounded-lg border border-slate-200 p-2" placeholder="Title" />
         <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mb-2 w-full rounded-lg border border-slate-200 p-2" rows="3" placeholder="Description" />
         <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className="mb-2 w-full rounded-lg border border-slate-200 p-2" placeholder="Location" />
-        <div className="mb-3 flex gap-2">
-          <select value={form.disasterType} onChange={(e) => setForm({ ...form, disasterType: e.target.value })} className="w-1/2 rounded-lg border border-slate-200 p-2">{disasterTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select>
-          <select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })} className="w-1/2 rounded-lg border border-slate-200 p-2">{severities.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
-        </div>
-        <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-800">Actual outcome</p>
-          <p className="mt-1 text-xs text-slate-500">Record the observed result after the incident for prediction evaluation.</p>
-          <div className="mt-3 flex gap-2">
-            <select value={form.actualOutcome.severity} onChange={(e) => setForm({ ...form, actualOutcome: { ...form.actualOutcome, severity: e.target.value } })} className="w-1/2 rounded-lg border border-slate-200 bg-white p-2 text-sm"><option value="">Actual severity</option>{severities.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
-            <select value={form.actualOutcome.impact} onChange={(e) => setForm({ ...form, actualOutcome: { ...form.actualOutcome, impact: e.target.value } })} className="w-1/2 rounded-lg border border-slate-200 bg-white p-2 text-sm"><option value="">Actual impact</option>{impactLevels.map((impact) => <option key={impact} value={impact}>{impact}</option>)}</select>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={handleUpdate} className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm text-white hover:bg-slate-700">Save</button>
-          <button onClick={() => setIsEditing(false)} className="rounded-lg bg-slate-200 px-4 py-1.5 text-sm text-slate-700 hover:bg-slate-300">Cancel</button>
-        </div>
+        <div className="mb-3 flex gap-2"><select value={form.disasterType} onChange={(e) => setForm({ ...form, disasterType: e.target.value })} className="w-1/2 rounded-lg border border-slate-200 p-2">{disasterTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select><select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })} className="w-1/2 rounded-lg border border-slate-200 p-2">{severities.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select></div>
+        <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-semibold text-slate-800">Actual outcome</p><p className="mt-1 text-xs text-slate-500">Record the observed result after the incident for prediction evaluation.</p><div className="mt-3 flex gap-2"><select value={form.actualOutcome.severity} onChange={(e) => setForm({ ...form, actualOutcome: { ...form.actualOutcome, severity: e.target.value } })} className="w-1/2 rounded-lg border border-slate-200 bg-white p-2 text-sm"><option value="">Actual severity</option>{severities.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select><select value={form.actualOutcome.impact} onChange={(e) => setForm({ ...form, actualOutcome: { ...form.actualOutcome, impact: e.target.value } })} className="w-1/2 rounded-lg border border-slate-200 bg-white p-2 text-sm"><option value="">Actual impact</option>{impactLevels.map((impact) => <option key={impact} value={impact}>{impact}</option>)}</select></div></div>
+        <div className="flex gap-2"><button onClick={handleUpdate} className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm text-white hover:bg-slate-700">Save</button><button onClick={() => setIsEditing(false)} className="rounded-lg bg-slate-200 px-4 py-1.5 text-sm text-slate-700 hover:bg-slate-300">Cancel</button></div>
       </div>
     );
   }
@@ -84,25 +69,16 @@ export default function AlertCard({ alert, setAlerts, onSelect, selected }) {
   return (
     <div className={`rounded-xl border bg-white p-5 shadow-sm transition ${selected ? "border-red-400 ring-2 ring-red-100" : "border-slate-200 hover:shadow-md"}`}>
       <button type="button" onClick={onSelect} className="block w-full text-left">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-lg font-semibold text-slate-800">{alert.title}</h3>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize text-slate-600">{alert.status}</span>
-        </div>
+        <div className="flex items-start justify-between gap-3"><h3 className="text-lg font-semibold text-slate-800">{alert.title}</h3><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize text-slate-600">{alert.status}</span></div>
         <div className="mt-1 flex gap-3 text-xs capitalize text-slate-500"><span>{alert.disasterType}</span><span>{alert.severity}</span></div>
         <p className="mt-3 text-sm text-slate-700">{alert.description}</p>
         <p className="mt-3 flex items-center gap-1 text-sm text-slate-500"><MapPin size={14} /> {alert.location}</p>
+        {hasImpact && <div className="mt-3 rounded-lg bg-slate-50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Estimated exposure</p><div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600 sm:grid-cols-3"><span>Population: <strong>{impact.population || 0}</strong></span><span>Hospitals: <strong>{impact.hospitals || 0}</strong></span><span>Schools: <strong>{impact.schools || 0}</strong></span><span>Roads: <strong>{impact.roadsKm || 0} km</strong></span><span>Centers: <strong>{impact.evacuationCenters || 0}</strong></span><span>Damage: <strong>₹{Number(impact.estimatedDamage || 0).toLocaleString()}</strong></span></div></div>}
         {alert.actualOutcome?.severity && <p className="mt-2 text-xs text-emerald-600">Actual outcome: {alert.actualOutcome.severity} · {alert.actualOutcome.impact}</p>}
-        <p className="mt-2 text-xs text-slate-400">Created: {createdTime}</p>
-        {isUpdated && <p className="text-xs text-blue-500">Updated: {updatedTime}</p>}
+        <p className="mt-2 text-xs text-slate-400">Created: {createdTime}</p>{isUpdated && <p className="text-xs text-blue-500">Updated: {updatedTime}</p>}
         <p className="mt-4 text-xs font-semibold text-red-600">View evacuation intelligence →</p>
       </button>
-      {isAdmin && <>
-        <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4">
-          <button onClick={() => setIsEditing(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-sm text-white hover:bg-amber-600"><Pencil size={14} /> Edit</button>
-          <button onClick={handleDelete} className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700"><Trash2 size={14} /> Delete</button>
-        </div>
-        <ResponseAssignment alert={alert} />
-      </>}
+      {isAdmin && <><div className="mt-4 flex gap-2 border-t border-slate-100 pt-4"><button onClick={() => setIsEditing(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-sm text-white hover:bg-amber-600"><Pencil size={14} /> Edit</button><button onClick={handleDelete} className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700"><Trash2 size={14} /> Delete</button></div><ResponseAssignment alert={alert} /></>}
     </div>
   );
 }
