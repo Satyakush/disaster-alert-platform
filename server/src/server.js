@@ -12,6 +12,7 @@ import incidentReportRoutes from "./routes/incidentReportRoutes.js";
 import shelterRoutes from "./routes/shelterRoutes.js";
 import evacuationRoutes from "./routes/evacuationRoutes.js";
 import responseTaskRoutes from "./routes/responseTaskRoutes.js";
+import resourceRoutes from "./routes/resourceRoutes.js";
 
 const PORT = process.env.PORT || 5000;
 const clientOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
@@ -49,6 +50,7 @@ app.use("/api/reports", incidentReportRoutes);
 app.use("/api/shelters", shelterRoutes);
 app.use("/api/evacuation", evacuationRoutes);
 app.use("/api/response-tasks", responseTaskRoutes);
+app.use("/api/resources", resourceRoutes);
 
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
