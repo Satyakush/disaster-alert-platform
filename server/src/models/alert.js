@@ -15,18 +15,7 @@ const alertSchema = new mongoose.Schema(
     disasterType: {
       type: String,
       required: true,
-      enum: [
-        "flood",
-        "cyclone",
-        "earthquake",
-        "wildfire",
-        "heatwave",
-        "storm",
-        "landslide",
-        "tsunami",
-        "industrial",
-        "other",
-      ],
+      enum: ["flood", "cyclone", "earthquake", "wildfire", "heatwave", "storm", "landslide", "tsunami", "industrial", "other"],
     },
     severity: {
       type: String,
@@ -62,6 +51,15 @@ const alertSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    impact: {
+      population: { type: Number, min: 0, default: 0 },
+      households: { type: Number, min: 0, default: 0 },
+      hospitals: { type: Number, min: 0, default: 0 },
+      schools: { type: Number, min: 0, default: 0 },
+      evacuationCenters: { type: Number, min: 0, default: 0 },
+      roadsKm: { type: Number, min: 0, default: 0 },
+      estimatedDamage: { type: Number, min: 0, default: 0 },
+    },
     source: {
       type: String,
       enum: ["admin", "system", "citizen", "external"],
@@ -77,58 +75,26 @@ const alertSchema = new mongoose.Schema(
       enum: ["observed", "likely", "possible", "unknown"],
       default: "likely",
     },
-    effectiveAt: {
-      type: Date,
-    },
-    expiresAt: {
-      type: Date,
-    },
+    effectiveAt: { type: Date },
+    expiresAt: { type: Date },
     instructions: {
       type: [String],
       default: [],
     },
     risk: {
-      score: {
-        type: Number,
-        min: 0,
-        max: 100,
-      },
-      level: {
-        type: String,
-        enum: ["low", "medium", "high", "critical"],
-      },
-      confidence: {
-        type: Number,
-        min: 0,
-        max: 1,
-      },
+      score: { type: Number, min: 0, max: 100 },
+      level: { type: String, enum: ["low", "medium", "high", "critical"] },
+      confidence: { type: Number, min: 0, max: 1 },
       factors: {
-        type: [
-          {
-            name: String,
-            value: Number,
-            weight: Number,
-          },
-        ],
+        type: [{ name: String, value: Number, weight: Number }],
         default: [],
       },
     },
     actualOutcome: {
-      severity: {
-        type: String,
-        enum: ["low", "medium", "high", "critical"],
-      },
-      impact: {
-        type: String,
-        enum: ["none", "limited", "moderate", "severe", "catastrophic"],
-      },
-      recordedAt: {
-        type: Date,
-      },
-      recordedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
+      severity: { type: String, enum: ["low", "medium", "high", "critical"] },
+      impact: { type: String, enum: ["none", "limited", "moderate", "severe", "catastrophic"] },
+      recordedAt: { type: Date },
+      recordedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
