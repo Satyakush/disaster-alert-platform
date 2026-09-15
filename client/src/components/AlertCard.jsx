@@ -25,6 +25,7 @@ export default function AlertCard({ alert, setAlerts, onSelect, selected }) {
   const isUpdated = alert.updatedAt !== alert.createdAt;
   const impact = alert.impact || {};
   const hasImpact = Object.values(impact).some((value) => Number(value) > 0);
+  const risk = alert.risk || {};
 
   const handleDelete = async () => {
     if (!window.confirm("Delete this alert?")) return;
@@ -73,6 +74,7 @@ export default function AlertCard({ alert, setAlerts, onSelect, selected }) {
         <div className="mt-1 flex gap-3 text-xs capitalize text-slate-500"><span>{alert.disasterType}</span><span>{alert.severity}</span></div>
         <p className="mt-3 text-sm text-slate-700">{alert.description}</p>
         <p className="mt-3 flex items-center gap-1 text-sm text-slate-500"><MapPin size={14} /> {alert.location}</p>
+        {risk.score !== undefined && <div className="mt-3 rounded-lg border border-cyan-100 bg-cyan-50/50 p-3"><div className="flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">AI risk assessment</p><span className="text-xs font-semibold capitalize text-slate-700">{risk.level || "unclassified"}</span></div><div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600"><span>Score: <strong>{risk.score}/100</strong></span><span>Confidence: <strong>{Math.round(Number(risk.confidence || 0) * 100)}%</strong></span></div></div>}
         {hasImpact && <div className="mt-3 rounded-lg bg-slate-50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Estimated exposure</p><div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600 sm:grid-cols-3"><span>Population: <strong>{impact.population || 0}</strong></span><span>Hospitals: <strong>{impact.hospitals || 0}</strong></span><span>Schools: <strong>{impact.schools || 0}</strong></span><span>Roads: <strong>{impact.roadsKm || 0} km</strong></span><span>Centers: <strong>{impact.evacuationCenters || 0}</strong></span><span>Damage: <strong>₹{Number(impact.estimatedDamage || 0).toLocaleString()}</strong></span></div></div>}
         {alert.actualOutcome?.severity && <p className="mt-2 text-xs text-emerald-600">Actual outcome: {alert.actualOutcome.severity} · {alert.actualOutcome.impact}</p>}
         <p className="mt-2 text-xs text-slate-400">Created: {createdTime}</p>{isUpdated && <p className="text-xs text-blue-500">Updated: {updatedTime}</p>}
