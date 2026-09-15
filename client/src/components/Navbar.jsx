@@ -1,6 +1,6 @@
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { FileWarning, LayoutDashboard, LogOut, ShieldCheck, Users, Radio, Boxes } from "lucide-react";
+import { FileWarning, LayoutDashboard, LogOut, ShieldCheck, Users, Radio, Boxes, BarChart3 } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -34,6 +34,9 @@ export default function Navbar() {
               <LayoutDashboard size={16} /> Dashboard
             </button>
           )}
+          <button onClick={() => navigate("/analytics")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white lg:flex">
+            <BarChart3 size={16} /> Analytics
+          </button>
           {(user?.role === "responder" || user?.role === "admin") && (
             <button onClick={() => navigate("/resources")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white lg:flex">
               <Boxes size={16} /> Resources
