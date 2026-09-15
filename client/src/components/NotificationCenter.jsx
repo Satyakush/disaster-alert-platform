@@ -15,7 +15,7 @@ export default function NotificationCenter() {
 
   useEffect(() => {
     const addNotification = (alert, event) => {
-      if (!alert?._id) return;
+      if (!alert?._id || (event === "alert:created" && alert.status === "draft")) return;
       const notification = {
         id: `${event}-${alert._id}-${Date.now()}`,
         title: alert.title || "Disaster alert update",
