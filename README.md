@@ -1,79 +1,341 @@
-# disaster-alert-platform
+# Disaster Intelligence & Early Warning Platform
 
-MERN-based disaster alert & management system with ML-assisted risk scoring.
+A full-stack, AI-assisted disaster intelligence platform built with MERN, FastAPI, MongoDB geospatial data, Leaflet, Socket.IO, and OSRM routing.
 
-A full-stack Disaster Alert Platform built using the MERN Stack, extended with geospatial intelligence and designed to be ML-ready for region-based risk analysis. This project demonstrates clean architecture, role-based access, real-time CRUD operations, and map-driven region selection — making it suitable for final-year projects, interviews, and production demos.
+The platform follows an operational workflow:
 
----
+**Detect → Assess Risk → Predict → Alert → Recommend Action → Track Response**
 
-## 🚀 Features
+## Features
 
-### ✅ Core (Completed)
-- 🔐 JWT Authentication (Login / Register)
-- 👥 Role-based access (Admin, User)
-- 🛡 Protected routes (Frontend + Backend)
-- 📢 Alert Management (Create, Read, Update, Delete)
-- ⏱️ Timestamps (createdAt, updatedAt)
-- 🔄 Instant UI updates (No refresh needed)
+### Authentication & Security
 
----
+- JWT authentication
+- Public registration creates citizen accounts only
+- Role-based access for `user`, `responder`, and `admin`
+- Protected frontend routes and backend APIs
+- Admin-controlled responder promotion and revocation
+- Response-task ownership enforcement
 
-### 🗺 Geo Intelligence (Completed)
-- 🌍 Interactive Map (OpenStreetMap + Leaflet)
-- 🔍 Search any location (City / Area)
-- 🎯 Region selection (Click + Adjustable radius)
+### Multi-Hazard Early Warning
 
+- Flood
+- Cyclone
+- Earthquake
+- Wildfire
+- Heatwave
+- Storm
+- Landslide
+- Tsunami
+- Industrial hazard
+- Other
 
+### Alert Intelligence
 
-## 🧱 Tech Stack
+- Structured disaster alerts
+- Severity: low, medium, high, critical
+- Lifecycle: draft → active → escalated → resolved → archived
+- Urgency and certainty classification
+- Alert radius and GeoJSON coordinates
+- Emergency instructions
+- Estimated population, household, infrastructure, road, shelter, and damage impact
+- Actual outcome recording for post-incident evaluation
+- Real-time Socket.IO alert updates
+
+### Multi-Hazard Risk Intelligence
+
+- Interactive map-driven region selection
+- Hazard scenario selection
+- Hazard intensity and probability
+- Population exposure
+- Vulnerability
+- Historical risk
+- Weighted risk score from 0–100
+- Risk levels: low, medium, high, critical
+- Model confidence
+- Explainable factor contributions and weights
+- Hazard-specific recommended actions
+- FastAPI risk intelligence service
+
+### Geospatial Intelligence
+
+- OpenStreetMap + Leaflet
+- Location search
+- Click-to-select risk regions
+- Adjustable risk radius
+- Active hazard zones
+- Citizen report locations
+- Shelter locations
+- Critical infrastructure locations
+- Evacuation route visualization
+
+### Citizen Reporting
+
+- Citizen incident reporting
+- Location coordinates
+- Disaster type and priority
+- Description and optional media URL
+- Verification workflow
+- Admin approval/rejection
+- Verified reports can be converted into live alerts
+- Duplicate alert conversion prevention
+
+### Evacuation Intelligence
+
+- Nearest shelter discovery using MongoDB geospatial queries
+- Shelter capacity and availability
+- Disaster-specific evacuation guidance
+- OSRM driving routes
+- Multiple route alternatives
+- Hazard-aware route evaluation
+- Active hazard exposure scoring
+- Hazard warnings and evacuation advisories
+
+### Response Operations
+
+- Admin-controlled responder team
+- Responder promotion/revocation
+- Incident-to-responder assignment
+- Response task lifecycle
+- Acknowledge, start, complete, or cancel assignments
+- Responder dashboard
+- Admin-wide operations view
+- Real-time task updates
+
+### Resource Management
+
+- Ambulances
+- Fire trucks
+- Rescue teams
+- Police units
+- Medical teams
+- Boats
+- Helicopters
+- Food and water supplies
+- Shelter capacity resources
+- Resource availability/deployment tracking
+- Responder and alert assignment
+
+### Critical Infrastructure
+
+- Hospitals
+- Schools
+- Police stations
+- Fire stations
+- Power facilities
+- Water facilities
+- Telecom facilities
+- Government facilities
+- Bridges
+- Operational/damaged/limited/closed status
+- Geospatial mapping
+
+### Historical Analytics
+
+- Alert totals and active/resolved counts
+- Disaster-type distribution
+- Severity distribution
+- Historical alert trends
+- Citizen-report statistics
+- Disaster hotspots
+- Response-task statistics
+- Risk-confidence analysis
+- Prediction-vs-actual severity evaluation
+
+## Architecture
+
+```text
+React + Vite + Tailwind
+        |
+        | REST / Socket.IO
+        v
+Node.js + Express
+        |
+        +--------------------+
+        |                    |
+        v                    v
+MongoDB Atlas          FastAPI ML Service
+Geospatial Data        Risk Intelligence
+        |                    |
+        +---------+----------+
+                  |
+                  v
+          Disaster Operations
+                  |
+        +---------+---------+
+        |         |         |
+        v         v         v
+     Alerts   Evacuation  Response
+               Intelligence Operations
+```
+
+## Tech Stack
 
 ### Frontend
-- React (Vite)
+
+- React
+- Vite
 - React Router
 - Tailwind CSS
 - Axios
-- Leaflet (Maps & Geospatial features)
+- Leaflet / React Leaflet
+- Socket.IO Client
+- Lucide React
 
 ### Backend
+
 - Node.js
 - Express.js
-- MongoDB (Mongoose)
-- JWT Authentication
-- Role-based Authorization (Middleware)
+- MongoDB
+- Mongoose
+- JWT
+- Socket.IO
+- Axios
 
-### Machine Learning (Planned)
-- Python (Flask / FastAPI)
-- Scikit-learn / TensorFlow
-- Geospatial datasets
-- REST-based integration with backend
+### ML / Intelligence
 
+- Python
+- FastAPI
+- Pydantic
+- Explainable weighted risk model
 
+### Geospatial Services
 
-## ▶️ How to Run Locally
+- OpenStreetMap
+- Nominatim geocoding
+- OSRM routing
+- MongoDB `2dsphere` indexes
 
-### Prerequisites
+## Project Structure
 
-- Node.js (v18 or later)
-- npm
-- MongoDB (Local or Atlas)
+```text
+server/
+├── src/
+│   ├── config/
+│   ├── controllers/
+│   ├── middlewares/
+│   ├── models/
+│   ├── routes/
+│   ├── app.js
+│   └── server.js
+└── package.json
 
-### Backend Setup
+client/
+├── src/
+│   ├── api/
+│   ├── components/
+│   ├── context/
+│   ├── pages/
+│   └── App.jsx
+└── package.json
 
-- cd server
-- npm install
-- npm run dev
+ml-service/
+├── main.py
+├── requirements.txt
+└── .venv/
+```
 
-### Frontend Setup
+## Local Setup
 
-- cd client
-- npm install
-- npm run dev
+### 1. Backend
 
-### Python setup
+```text
+cd server
+npm install
+npm run dev
+```
 
-- cd ml-service
-- python -m venv .venv
-- .\.venv\Scripts\activate
-- python -m pip install --upgrade pip
-- python -m pip install -r requirements.txt
-- python -m uvicorn main:app --reload --port 8000
+Production-style start:
+
+```text
+npm start
+```
+
+### 2. Frontend
+
+```text
+cd client
+npm install
+npm run dev
+```
+
+Production build:
+
+```text
+npm run build
+```
+
+### 3. ML Service
+
+```text
+cd ml-service
+python -m venv .venv
+.\\.venv\\Scripts\\activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m uvicorn main:app --reload --port 8000
+```
+
+## Environment Variables
+
+### Server
+
+```text
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+CLIENT_URL=http://localhost:5173
+ML_SERVICE_URL=http://localhost:8000
+ROUTING_SERVICE_URL=https://router.project-osrm.org
+```
+
+### Client
+
+```text
+VITE_API_URL=http://localhost:5000/api
+VITE_SOCKET_URL=http://localhost:5000
+```
+
+## Operational Roles
+
+### Citizen (`user`)
+
+- View disaster intelligence
+- View alerts
+- Run risk scenarios
+- Find shelters and evacuation guidance
+- Report incidents
+
+### Responder (`responder`)
+
+- View assigned response tasks
+- Update task status
+- View field resources
+- Support emergency operations
+
+### Administrator (`admin`)
+
+- Create and manage alerts
+- Manage shelters
+- Verify citizen reports
+- Promote responders
+- Assign response tasks
+- Manage resources
+- Manage infrastructure
+- Monitor operations and analytics
+
+## Risk Model
+
+The current intelligence service uses an explainable weighted model:
+
+- Hazard intensity: 30%
+- Hazard probability: 20%
+- Exposure: 20%
+- Vulnerability: 20%
+- Historical risk: 10%
+
+The resulting score is normalized to 0–100 and classified into low, medium, high, or critical risk.
+
+## Important Note
+
+The risk engine and evacuation routing are decision-support features. They do not replace official emergency warnings, evacuation orders, emergency services, or local authority instructions.
