@@ -3,6 +3,7 @@ import { AlertTriangle, Boxes, CheckCircle2, Clock3, MapPin, ShieldAlert, Truck 
 import Navbar from "../components/Navbar";
 import { fetchResponseTasks, updateResponseTask } from "../api/responseTasks";
 import { fetchResources } from "../api/resources";
+import { useAuth } from "../context/AuthContext";
 import { socket, connectToAlerts, disconnectFromAlerts } from "../api/socket";
 
 const statusOptions = ["assigned", "acknowledged", "in_progress", "completed", "cancelled"];
@@ -22,6 +23,7 @@ const resourceStatusClass = {
 };
 
 export default function ResponderDashboard() {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [resources, setResources] = useState([]);
   const [error, setError] = useState("");
@@ -30,7 +32,10 @@ export default function ResponderDashboard() {
 
   const loadData = async () => {
     try {
-      const [taskData, resourceData] = await Promise.all([fetchResponseTasks(), fetchResources()]);
+      const [taskData, resourceData] = await Promise.all([
+        fetchResponseTasks(user?.role === "admin"),
+        fetchResources(),
+      ]);
       setTasks(taskData.tasks || []);
       setResources(resourceData.resources || []);
       setError("");
@@ -42,6 +47,7 @@ export default function ResponderDashboard() {
   };
 
   useEffect(() => {
+    if (!user?.role) return;
     loadData();
     connectToAlerts();
 
@@ -65,7 +71,7 @@ export default function ResponderDashboard() {
       socket.off("response-task:updated", handleTaskUpdated);
       disconnectFromAlerts();
     };
-  }, []);
+  }, [user?.role]);
 
   const updateTask = async (task, status) => {
     const id = task._id || task.id;
@@ -98,12 +104,9 @@ export default function ResponderDashboard() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-cyan-400">Emergency operations</p>
               <h1 className="mt-1 text-2xl font-bold">Responder Dashboard</h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-300">Manage your assigned incidents, acknowledge deployments, and track field response progress.</p>
+              <p className="mt-2 max-w-2xl text-sm text-slate-300">Manage assigned incidents, acknowledge deployments, and track field response progress.</p>
             </div>
-            <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-300">
-              <ShieldAlert size={18} className="text-cyan-400" />
-              Field response mode
-            </div>
+            <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-300"><ShieldAlert size={18} className="text-cyan-400" />Field response mode</div>
           </div>
         </section>
 
@@ -117,31 +120,14 @@ export default function ResponderDashboard() {
         {error && <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4"><div><h2 className="font-semibold text-slate-900">My assignments</h2><p className="text-sm text-slate-500">Incidents assigned to you by emergency administrators.</p></div><Truck size={20} className="text-slate-400" /></div>
-          {loading ? <div className="p-6 text-sm text-slate-500">Loading assignments...</div> : tasks.length === 0 ? <div className="p-8 text-center"><ShieldAlert size={28} className="mx-auto text-slate-300" /><p className="mt-3 font-medium text-slate-700">No response assignments</p><p className="mt-1 text-sm text-slate-500">New deployments assigned by an admin will appear here.</p></div> : (
-            <div className="divide-y divide-slate-200">
-              {tasks.map((task) => {
-                const alert = task.alert || {};
-                const id = task._id || task.id;
-                const severity = alert.severity || task.priority || "medium";
-                const assignedResources = resources.filter((resource) => resource.assignedResponder?._id === task.responder?._id && resource.assignedAlert?._id === alert._id);
-                return (
-                  <article key={id} className="p-5">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${severityClass[severity] || severityClass.medium}`}>{severity}</span><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize text-slate-600">{task.status.replace("_", " ")}</span><span className="text-xs text-slate-400">{alert.disasterType || "incident"}</span></div>
-                        <h3 className="mt-3 text-lg font-bold text-slate-900">{alert.title || alert.location || "Emergency assignment"}</h3>
-                        <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-500">{alert.location && <span className="inline-flex items-center gap-1"><MapPin size={15} />{alert.location}</span>}{alert.radius && <span>{(alert.radius / 1000).toFixed(1)} km affected radius</span>}</div>
-                        {task.notes && <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">{task.notes}</p>}
-                        {assignedResources.length > 0 && <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4"><div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Boxes size={16} /> Resources assigned to this incident</div><div className="flex flex-wrap gap-2">{assignedResources.map((resource) => <span key={resource._id} className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm">{resource.name} · {resource.availableQuantity}/{resource.quantity} available</span>)}</div></div>}
-                      </div>
-                      <div className="flex flex-col gap-2 lg:min-w-52"><label className="text-xs font-semibold uppercase tracking-wide text-slate-400">Response status</label><select value={task.status} disabled={updatingId === id} onChange={(event) => updateTask(task, event.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-cyan-500 disabled:opacity-50">{statusOptions.map((status) => <option key={status} value={status}>{status.replace("_", " ")}</option>)}</select>{updatingId === id && <span className="text-xs text-slate-400">Updating...</span>}</div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
+          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4"><div><h2 className="font-semibold text-slate-900">{user?.role === "admin" ? "Response assignments" : "My assignments"}</h2><p className="text-sm text-slate-500">{user?.role === "admin" ? "All field deployments managed by emergency administrators." : "Incidents assigned to you by emergency administrators."}</p></div><Truck size={20} className="text-slate-400" /></div>
+          {loading ? <div className="p-6 text-sm text-slate-500">Loading assignments...</div> : tasks.length === 0 ? <div className="p-8 text-center"><ShieldAlert size={28} className="mx-auto text-slate-300" /><p className="mt-3 font-medium text-slate-700">No response assignments</p><p className="mt-1 text-sm text-slate-500">New deployments assigned by an admin will appear here.</p></div> : <div className="divide-y divide-slate-200">{tasks.map((task) => {
+            const alert = task.alert || {};
+            const id = task._id || task.id;
+            const severity = alert.severity || task.priority || "medium";
+            const assignedResources = resources.filter((resource) => resource.assignedResponder?._id === task.responder?._id && resource.assignedAlert?._id === alert._id);
+            return <article key={id} className="p-5"><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${severityClass[severity] || severityClass.medium}`}>{severity}</span><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize text-slate-600">{task.status.replace("_", " ")}</span><span className="text-xs text-slate-400">{alert.disasterType || "incident"}</span>{user?.role === "admin" && task.responder?.name && <span className="text-xs text-slate-400">Assigned to {task.responder.name}</span>}</div><h3 className="mt-3 text-lg font-bold text-slate-900">{alert.title || alert.location || "Emergency assignment"}</h3><div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-500">{alert.location && <span className="inline-flex items-center gap-1"><MapPin size={15} />{alert.location}</span>}{alert.radius && <span>{(alert.radius / 1000).toFixed(1)} km affected radius</span>}</div>{task.notes && <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">{task.notes}</p>}{assignedResources.length > 0 && <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4"><div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Boxes size={16} /> Resources assigned to this incident</div><div className="flex flex-wrap gap-2">{assignedResources.map((resource) => <span key={resource._id} className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm">{resource.name} · {resource.availableQuantity}/{resource.quantity} available</span>)}</div></div>}</div><div className="flex flex-col gap-2 lg:min-w-52"><label className="text-xs font-semibold uppercase tracking-wide text-slate-400">Response status</label><select value={task.status} disabled={updatingId === id} onChange={(event) => updateTask(task, event.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-cyan-500 disabled:opacity-50">{statusOptions.map((status) => <option key={status} value={status}>{status.replace("_", " ")}</option>)}</select>{updatingId === id && <span className="text-xs text-slate-400">Updating...</span>}</div></div></article>;
+          })}</div>}
         </section>
 
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
