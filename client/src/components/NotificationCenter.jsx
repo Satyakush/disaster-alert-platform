@@ -31,12 +31,22 @@ export default function NotificationCenter() {
 
     const handleCreated = (alert) => addNotification(alert, "alert:created");
     const handleStatusChanged = (alert) => addNotification(alert, "alert:status-changed");
+    const handleUpdated = (alert) => addNotification(alert, "alert:updated");
+    const handleDeleted = ({ id }) => {
+      if (!id) return;
+      setNotifications((current) => current.filter((notification) => !notification.id.endsWith(`-${id}`)));
+    };
+
     socket.on("alert:created", handleCreated);
     socket.on("alert:status-changed", handleStatusChanged);
+    socket.on("alert:updated", handleUpdated);
+    socket.on("alert:deleted", handleDeleted);
 
     return () => {
       socket.off("alert:created", handleCreated);
       socket.off("alert:status-changed", handleStatusChanged);
+      socket.off("alert:updated", handleUpdated);
+      socket.off("alert:deleted", handleDeleted);
     };
   }, []);
 
