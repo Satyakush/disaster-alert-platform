@@ -6,12 +6,23 @@ import ResponseAssignment from "./ResponseAssignment";
 
 const disasterTypes = ["flood", "cyclone", "earthquake", "wildfire", "heatwave", "storm", "landslide", "tsunami", "industrial", "other"];
 const severities = ["low", "medium", "high", "critical"];
+const impactLevels = ["none", "limited", "moderate", "severe", "catastrophic"];
 
 export default function AlertCard({ alert, setAlerts, onSelect, selected }) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState({ title: alert.title, description: alert.description, disasterType: alert.disasterType, severity: alert.severity, location: alert.location });
+  const [form, setForm] = useState({
+    title: alert.title,
+    description: alert.description,
+    disasterType: alert.disasterType,
+    severity: alert.severity,
+    location: alert.location,
+    actualOutcome: {
+      severity: alert.actualOutcome?.severity || "",
+      impact: alert.actualOutcome?.impact || "",
+    },
+  });
   const createdTime = new Date(alert.createdAt).toLocaleString();
   const updatedTime = new Date(alert.updatedAt).toLocaleString();
   const isUpdated = alert.updatedAt !== alert.createdAt;
@@ -28,11 +39,18 @@ export default function AlertCard({ alert, setAlerts, onSelect, selected }) {
 
   const handleUpdate = async () => {
     try {
-      const res = await updateAlert(alert._id, form);
+      const payload = { ...form };
+      if (!form.actualOutcome.severity && !form.actualOutcome.impact) {
+        delete payload.actualOutcome;
+      } else if (!form.actualOutcome.severity || !form.actualOutcome.impact) {
+        window.alert("Select both actual severity and actual impact");
+        return;
+      }
+      const res = await updateAlert(alert._id, payload);
       setAlerts((prev) => prev.map((item) => item._id === alert._id ? res.alert : item));
       setIsEditing(false);
     } catch (err) {
-      window.alert("Failed to update alert");
+      window.alert(err.response?.data?.message || "Failed to update alert");
     }
   };
 
@@ -46,6 +64,14 @@ export default function AlertCard({ alert, setAlerts, onSelect, selected }) {
         <div className="mb-3 flex gap-2">
           <select value={form.disasterType} onChange={(e) => setForm({ ...form, disasterType: e.target.value })} className="w-1/2 rounded-lg border border-slate-200 p-2">{disasterTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select>
           <select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })} className="w-1/2 rounded-lg border border-slate-200 p-2">{severities.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
+        </div>
+        <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-sm font-semibold text-slate-800">Actual outcome</p>
+          <p className="mt-1 text-xs text-slate-500">Record the observed result after the incident for prediction evaluation.</p>
+          <div className="mt-3 flex gap-2">
+            <select value={form.actualOutcome.severity} onChange={(e) => setForm({ ...form, actualOutcome: { ...form.actualOutcome, severity: e.target.value } })} className="w-1/2 rounded-lg border border-slate-200 bg-white p-2 text-sm"><option value="">Actual severity</option>{severities.map((severity) => <option key={severity} value={severity}>{severity}</option>)}</select>
+            <select value={form.actualOutcome.impact} onChange={(e) => setForm({ ...form, actualOutcome: { ...form.actualOutcome, impact: e.target.value } })} className="w-1/2 rounded-lg border border-slate-200 bg-white p-2 text-sm"><option value="">Actual impact</option>{impactLevels.map((impact) => <option key={impact} value={impact}>{impact}</option>)}</select>
+          </div>
         </div>
         <div className="flex gap-2">
           <button onClick={handleUpdate} className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm text-white hover:bg-slate-700">Save</button>
@@ -65,6 +91,7 @@ export default function AlertCard({ alert, setAlerts, onSelect, selected }) {
         <div className="mt-1 flex gap-3 text-xs capitalize text-slate-500"><span>{alert.disasterType}</span><span>{alert.severity}</span></div>
         <p className="mt-3 text-sm text-slate-700">{alert.description}</p>
         <p className="mt-3 flex items-center gap-1 text-sm text-slate-500"><MapPin size={14} /> {alert.location}</p>
+        {alert.actualOutcome?.severity && <p className="mt-2 text-xs text-emerald-600">Actual outcome: {alert.actualOutcome.severity} · {alert.actualOutcome.impact}</p>}
         <p className="mt-2 text-xs text-slate-400">Created: {createdTime}</p>
         {isUpdated && <p className="text-xs text-blue-500">Updated: {updatedTime}</p>}
         <p className="mt-4 text-xs font-semibold text-red-600">View evacuation intelligence →</p>
