@@ -2,7 +2,6 @@ import Alert from "../models/alert.js";
 import IncidentReport from "../models/incidentReport.js";
 
 const severityWeight = { low: 1, medium: 2, high: 4, critical: 7 };
-const severityOrder = { low: 1, medium: 2, high: 3, critical: 4 };
 
 const getStartDate = (days) => {
   const value = Math.min(Math.max(Number(days) || 30, 7), 3650);
@@ -104,8 +103,8 @@ export const getAnalyticsOverview = async (req, res) => {
       return acc;
     }, {});
 
-    const outcomeAlerts = alerts.filter((alert) => alert.actualOutcome?.severity);
-    const matchedOutcomes = outcomeAlerts.filter((alert) => alert.severity === alert.actualOutcome.severity);
+    const outcomeAlerts = alerts.filter((alert) => alert.risk?.level && alert.actualOutcome?.severity);
+    const matchedOutcomes = outcomeAlerts.filter((alert) => alert.risk.level === alert.actualOutcome.severity);
     const predictionAccuracy = outcomeAlerts.length ? Number(((matchedOutcomes.length / outcomeAlerts.length) * 100).toFixed(1)) : null;
 
     const averageConfidenceValues = alerts.map((alert) => alert.risk?.confidence).filter((value) => Number.isFinite(value));
