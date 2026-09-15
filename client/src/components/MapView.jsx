@@ -53,7 +53,6 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
   const shelterPoints = shelters.filter((shelter) => shelter.coordinates?.coordinates?.length === 2);
   const infrastructurePoints = infrastructure.filter((item) => item.coordinates?.coordinates?.length === 2);
   const severityColors = { low: "#22c55e", medium: "#eab308", high: "#f97316", critical: "#ef4444" };
-  const infrastructureStatusColors = { operational: "#16a34a", limited: "#eab308", damaged: "#f97316", closed: "#dc2626" };
   const routePositions = route?.geometry?.coordinates?.map(([lng, lat]) => [lat, lng]) || [];
 
   return (
@@ -73,18 +72,10 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
         {marker && <Marker position={marker}><Popup>Selected location</Popup></Marker>}
         {region && <Circle center={[region.lat, region.lng]} radius={region.radius} pathOptions={{ color: "#0f172a", fillOpacity: 0.08 }} />}
         {routePositions.length > 1 && <Polyline positions={routePositions} pathOptions={{ color: "#2563eb", weight: 6, opacity: 0.85 }}><Popup>Recommended evacuation route</Popup></Polyline>}
-
-        {alertPoints.map((alert) => {
-          const [lng, lat] = alert.coordinates.coordinates;
-          const color = severityColors[alert.severity] || severityColors.medium;
-          return [
-            <Circle key={`area-${alert._id}`} center={[lat, lng]} radius={Math.max(Number(alert.radius) || 1500, 500)} pathOptions={{ color, fillColor: color, fillOpacity: 0.2, weight: 2 }} />,
-            <Marker key={`marker-${alert._id}`} position={[lat, lng]}><Popup><strong>{alert.title}</strong><br />{alert.severity} severity<br />{alert.location}</Popup></Marker>,
-          ];
-        })}
+        {alertPoints.map((alert) => { const [lng, lat] = alert.coordinates.coordinates; const color = severityColors[alert.severity] || severityColors.medium; return [<Circle key={`area-${alert._id}`} center={[lat, lng]} radius={Math.max(Number(alert.radius) || 1500, 500)} pathOptions={{ color, fillColor: color, fillOpacity: 0.2, weight: 2 }} />, <Marker key={`marker-${alert._id}`} position={[lat, lng]}><Popup><strong>{alert.title}</strong><br />{alert.severity} severity<br />{alert.location}</Popup></Marker>]; })}
         {reportPoints.map((report) => { const [lng, lat] = report.coordinates.coordinates; return <Marker key={`report-${report._id}`} position={[lat, lng]}><Popup><strong>{report.title}</strong><br />Citizen report · {report.priority}</Popup></Marker>; })}
         {shelterPoints.map((shelter) => { const [lng, lat] = shelter.coordinates.coordinates; return <Marker key={`shelter-${shelter._id}`} position={[lat, lng]}><Popup><strong>{shelter.name}</strong><br />{shelter.availableCapacity} spaces available<br />{shelter.location}</Popup></Marker>; })}
-        {infrastructurePoints.map((item) => { const [lng, lat] = item.coordinates.coordinates; const color = infrastructureStatusColors[item.status] || infrastructureStatusColors.operational; return <Marker key={`infrastructure-${item._id}`} position={[lat, lng]}><Popup><strong>{item.name}</strong><br />{String(item.type || "infrastructure").replaceAll("_", " ")} · {item.status}<br />{item.location}<br />{item.contact || "No contact listed"}</Popup></Marker>; })}
+        {infrastructurePoints.map((item) => { const [lng, lat] = item.coordinates.coordinates; return <Marker key={`infrastructure-${item._id}`} position={[lat, lng]}><Popup><strong>{item.name}</strong><br />{String(item.type || "infrastructure").replaceAll("_", " ")} · {item.status}<br />{item.location}<br />{item.contact || "No contact listed"}</Popup></Marker>; })}
       </MapContainer>
     </div>
   );
