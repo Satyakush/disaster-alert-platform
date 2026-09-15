@@ -14,30 +14,17 @@ import evacuationRoutes from "./routes/evacuationRoutes.js";
 import responseTaskRoutes from "./routes/responseTaskRoutes.js";
 import resourceRoutes from "./routes/resourceRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
+import infrastructureRoutes from "./routes/infrastructureRoutes.js";
 
 const PORT = process.env.PORT || 5000;
-const clientOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
+const clientOrigins = (process.env.CLIENT_URL || "http://localhost:5173").split(",").map((origin) => origin.trim()).filter(Boolean);
 const httpServer = http.createServer(app);
-
-const io = new Server(httpServer, {
-  cors: {
-    origin: clientOrigins,
-    credentials: true,
-  },
-});
+const io = new Server(httpServer, { cors: { origin: clientOrigins, credentials: true } });
 
 app.set("io", io);
 
 io.on("connection", (socket) => {
-  socket.emit("connection:ready", {
-    connected: true,
-    timestamp: new Date().toISOString(),
-  });
-
+  socket.emit("connection:ready", { connected: true, timestamp: new Date().toISOString() });
   socket.on("alerts:join", () => socket.join("alerts"));
   socket.on("alerts:leave", () => socket.leave("alerts"));
 });
@@ -53,6 +40,7 @@ app.use("/api/evacuation", evacuationRoutes);
 app.use("/api/response-tasks", responseTaskRoutes);
 app.use("/api/resources", resourceRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/infrastructure", infrastructureRoutes);
 
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
