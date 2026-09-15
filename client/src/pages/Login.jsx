@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../api/auth";
-
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
@@ -13,26 +12,24 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-  try {
-    const data = await loginUser({ email, password });
+    try {
+      const data = await loginUser({ email, password });
+      const { token, user } = data;
 
-    const { token, user } = data;
-
-    login(token, user);
-    navigate("/dashboard");
-  } catch (err) {
-    console.error("Login failed:", err);
-    setError("Invalid email or password");
-  } finally {
-    setLoading(false);
-  }
-};
-
+      login(token, user);
+      navigate(user.role === "responder" ? "/responder" : "/dashboard");
+    } catch (err) {
+      console.error("Login failed:", err);
+      setError("Invalid email or password");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
@@ -72,17 +69,16 @@ export default function Login() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
-        
-        <p className="text-sm text-center mt-4">
-  New user?{" "}
-  <span
-    onClick={() => navigate("/register")}
-    className="text-blue-600 cursor-pointer"
-  >
-    Register here
-  </span>
-</p>
 
+        <p className="text-sm text-center mt-4">
+          New user?{" "}
+          <span
+            onClick={() => navigate("/register")}
+            className="text-blue-600 cursor-pointer"
+          >
+            Register here
+          </span>
+        </p>
       </div>
     </div>
   );
