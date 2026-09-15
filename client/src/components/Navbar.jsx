@@ -1,6 +1,7 @@
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { FileWarning, LayoutDashboard, LogOut, ShieldCheck, Users, Radio, Boxes, BarChart3, Building2 } from "lucide-react";
+import NotificationCenter from "./NotificationCenter";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -20,6 +21,7 @@ export default function Navbar() {
           <button onClick={() => navigate("/analytics")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white lg:flex"><BarChart3 size={16} /> Analytics</button>
           {(user?.role === "responder" || user?.role === "admin") && <><button onClick={() => navigate("/resources")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white lg:flex"><Boxes size={16} /> Resources</button><button onClick={() => navigate("/infrastructure")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white xl:flex"><Building2 size={16} /> Infrastructure</button></>}
           {user?.role === "admin" && <><button onClick={() => navigate("/responder")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white lg:flex"><Radio size={16} /> Operations</button><button onClick={() => navigate("/reports")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white md:flex"><ShieldCheck size={16} /> Verify Reports</button><button onClick={() => navigate("/response-team")} className="hidden items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white xl:flex"><Users size={16} /> Response Team</button></>}
+          <NotificationCenter />
           <button onClick={() => navigate("/report")} className="rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">Report Incident</button>
           <span className="hidden text-sm capitalize text-slate-400 lg:block">{user?.role}</span><button onClick={handleLogout} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-red-400" aria-label="Logout"><LogOut size={18} /></button>
         </div>
