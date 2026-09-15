@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { fetchAlerts } from "../api/alerts";
 import { fetchReports } from "../api/reports";
 import { fetchShelters } from "../api/shelters";
+import { fetchInfrastructure } from "../api/infrastructure";
 import { analyzeRisk } from "../api/risk";
 import { connectToAlerts, disconnectFromAlerts, socket } from "../api/socket";
 import Navbar from "../components/Navbar";
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState([]);
   const [reports, setReports] = useState([]);
   const [shelters, setShelters] = useState([]);
+  const [infrastructure, setInfrastructure] = useState([]);
   const [error, setError] = useState("");
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [selectedAlert, setSelectedAlert] = useState(null);
@@ -35,10 +37,11 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [alertsData, reportsData, sheltersData] = await Promise.all([fetchAlerts(), fetchReports({ status: "verified" }), fetchShelters({})]);
+      const [alertsData, reportsData, sheltersData, infrastructureData] = await Promise.all([fetchAlerts(), fetchReports({ status: "verified" }), fetchShelters({}), fetchInfrastructure()]);
       setAlerts(alertsData.alerts || []);
       setReports(reportsData.reports || []);
       setShelters(sheltersData.shelters || []);
+      setInfrastructure(infrastructureData.infrastructure || []);
       setError("");
     } catch (err) {
       console.error(err);
@@ -56,6 +59,9 @@ export default function Dashboard() {
     const handleShelterCreated = (shelter) => setShelters((current) => [shelter, ...current.filter((item) => item._id !== shelter._id)]);
     const handleShelterUpdated = (shelter) => setShelters((current) => current.map((item) => (item._id === shelter._id ? shelter : item)));
     const handleShelterDeleted = ({ id }) => setShelters((current) => current.filter((item) => item._id !== id));
+    const handleInfrastructureCreated = (item) => setInfrastructure((current) => [item, ...current.filter((entry) => entry._id !== item._id)]);
+    const handleInfrastructureUpdated = (item) => setInfrastructure((current) => current.map((entry) => (entry._id === item._id ? item : entry)));
+    const handleInfrastructureDeleted = ({ id }) => setInfrastructure((current) => current.filter((item) => item._id !== id));
     socket.on("alert:created", handleCreated);
     socket.on("alert:updated", handleUpdated);
     socket.on("alert:status-changed", handleStatusChanged);
@@ -63,6 +69,9 @@ export default function Dashboard() {
     socket.on("shelter:created", handleShelterCreated);
     socket.on("shelter:updated", handleShelterUpdated);
     socket.on("shelter:deleted", handleShelterDeleted);
+    socket.on("infrastructure:created", handleInfrastructureCreated);
+    socket.on("infrastructure:updated", handleInfrastructureUpdated);
+    socket.on("infrastructure:deleted", handleInfrastructureDeleted);
     return () => {
       socket.off("alert:created", handleCreated);
       socket.off("alert:updated", handleUpdated);
@@ -71,6 +80,9 @@ export default function Dashboard() {
       socket.off("shelter:created", handleShelterCreated);
       socket.off("shelter:updated", handleShelterUpdated);
       socket.off("shelter:deleted", handleShelterDeleted);
+      socket.off("infrastructure:created", handleInfrastructureCreated);
+      socket.off("infrastructure:updated", handleInfrastructureUpdated);
+      socket.off("infrastructure:deleted", handleInfrastructureDeleted);
       disconnectFromAlerts();
     };
   }, []);
@@ -130,7 +142,7 @@ export default function Dashboard() {
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
         <section className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-sm font-medium text-red-600">EARLY WARNING CENTER</p><h1 className="text-3xl font-bold tracking-tight text-slate-900">Disaster Intelligence Dashboard</h1><p className="mt-1 text-sm text-slate-500">Detect hazards, assess risk, and respond faster.</p></div><div className="flex items-center gap-2 text-sm text-emerald-700"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Live monitoring connected</div></section>
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><StatCard icon={BellRing} label="Total Alerts" value={alerts.length} /><StatCard icon={Activity} label="Active Alerts" value={activeCount} /><StatCard icon={ShieldAlert} label="Critical Alerts" value={criticalCount} /><StatCard icon={AlertTriangle} label="Resolved" value={resolvedCount} /></section>
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]"><MapView onRegionSelect={handleRegionSelect} alerts={alerts} reports={reports} shelters={shelters} route={route} /><RiskPanel selectedRegion={selectedRegion} riskInputs={riskInputs} setRiskInputs={setRiskInputs} onPreset={applySeverityPreset} onAnalyze={analyzeSelectedRisk} riskResult={riskResult} riskLoading={riskLoading} riskError={riskError} riskLevel={riskLevel} riskScore={riskScore} /></section>
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]"><MapView onRegionSelect={handleRegionSelect} alerts={alerts} reports={reports} shelters={shelters} infrastructure={infrastructure} route={route} /><RiskPanel selectedRegion={selectedRegion} riskInputs={riskInputs} setRiskInputs={setRiskInputs} onPreset={applySeverityPreset} onAnalyze={analyzeSelectedRisk} riskResult={riskResult} riskLoading={riskLoading} riskError={riskError} riskLevel={riskLevel} riskScore={riskScore} /></section>
         <EvacuationPanel alert={selectedAlert} onRouteChange={setRoute} />
         {isAdmin && <CreateAlertForm onCreated={loadData} selectedRegion={selectedRegion} />}
         {isAdmin && <ShelterManagement shelters={shelters} selectedRegion={selectedRegion} onChanged={loadData} />}
