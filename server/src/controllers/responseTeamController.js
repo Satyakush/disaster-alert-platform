@@ -1,4 +1,6 @@
 import User from "../models/user.js";
+import ResponseTask from "../models/responseTask.js";
+import Resource from "../models/resource.js";
 
 const publicUserFields = "name email role createdAt";
 
@@ -74,6 +76,15 @@ export const revokeResponderRole = async (req, res) => {
 
     if (user.role !== "responder") {
       return res.status(400).json({ message: "User is not a responder" });
+    }
+
+    const [activeTasks, assignedResources] = await Promise.all([
+      ResponseTask.countDocuments({ responder: id, status: { $in: ["assigned", "acknowledged", "in_progress"] } }),
+      Resource.countDocuments({ assignedResponder: id, status: { $in: ["available", "deployed"] } }),
+    ]);
+
+    if (activeTasks || assignedResources) {
+      return res.status(409).json({ message: "Cannot revoke responder role while active tasks or resources are assigned" });
     }
 
     user.role = "user";
