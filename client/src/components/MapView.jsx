@@ -11,8 +11,14 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-function ClickHandler({ setRegion }) {
-  useMapEvents({ click(e) { setRegion({ lat: e.latlng.lat, lng: e.latlng.lng, radius: 3000 }); } });
+function ClickHandler({ setRegion, setMarker }) {
+  useMapEvents({
+    click(e) {
+      const point = [e.latlng.lat, e.latlng.lng];
+      setMarker(point);
+      setRegion({ lat: e.latlng.lat, lng: e.latlng.lng, radius: 3000 });
+    },
+  });
   return null;
 }
 
@@ -20,6 +26,31 @@ function MapCenter({ center }) {
   const map = useMap();
   useEffect(() => { map.setView(center, Math.max(map.getZoom(), 10), { animate: true }); }, [center, map]);
   return null;
+}
+
+function RouteView({ positions }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (positions.length < 2) return;
+    map.fitBounds(positions, { padding: [40, 40], maxZoom: 13, animate: true });
+  }, [map, positions]);
+
+  if (positions.length < 2) return null;
+
+  return (
+    <>
+      <Polyline positions={positions} pathOptions={{ color: "#2563eb", weight: 7, opacity: 0.9 }}>
+        <Popup>Recommended evacuation route</Popup>
+      </Polyline>
+      <Marker position={positions[0]}>
+        <Popup>Evacuation origin</Popup>
+      </Marker>
+      <Marker position={positions[positions.length - 1]}>
+        <Popup>Safe shelter destination</Popup>
+      </Marker>
+    </>
+  );
 }
 
 export default function MapView({ onRegionSelect, alerts = [], reports = [], shelters = [], infrastructure = [], route = null }) {
@@ -68,10 +99,10 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
       <MapContainer center={center} zoom={10} style={{ height: "480px", width: "100%", borderRadius: "12px" }}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
         <MapCenter center={center} />
-        <ClickHandler setRegion={setRegion} />
+        <ClickHandler setRegion={setRegion} setMarker={setMarker} />
         {marker && <Marker position={marker}><Popup>Selected location</Popup></Marker>}
         {region && <Circle center={[region.lat, region.lng]} radius={region.radius} pathOptions={{ color: "#0f172a", fillOpacity: 0.08 }} />}
-        {routePositions.length > 1 && <Polyline positions={routePositions} pathOptions={{ color: "#2563eb", weight: 6, opacity: 0.85 }}><Popup>Recommended evacuation route</Popup></Polyline>}
+        <RouteView positions={routePositions} />
         {alertPoints.map((alert) => { const [lng, lat] = alert.coordinates.coordinates; const color = severityColors[alert.severity] || severityColors.medium; return [<Circle key={`area-${alert._id}`} center={[lat, lng]} radius={Math.max(Number(alert.radius) || 1500, 500)} pathOptions={{ color, fillColor: color, fillOpacity: 0.2, weight: 2 }} />, <Marker key={`marker-${alert._id}`} position={[lat, lng]}><Popup><strong>{alert.title}</strong><br />{alert.severity} severity<br />{alert.location}</Popup></Marker>]; })}
         {reportPoints.map((report) => { const [lng, lat] = report.coordinates.coordinates; return <Marker key={`report-${report._id}`} position={[lat, lng]}><Popup><strong>{report.title}</strong><br />Citizen report · {report.priority}</Popup></Marker>; })}
         {shelterPoints.map((shelter) => { const [lng, lat] = shelter.coordinates.coordinates; return <Marker key={`shelter-${shelter._id}`} position={[lat, lng]}><Popup><strong>{shelter.name}</strong><br />{shelter.availableCapacity} spaces available<br />{shelter.location}</Popup></Marker>; })}
