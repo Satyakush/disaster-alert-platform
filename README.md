@@ -41,6 +41,7 @@ The platform follows an operational workflow:
 - Estimated population, household, infrastructure, road, shelter, and damage impact
 - Actual outcome recording for post-incident evaluation
 - Real-time Socket.IO alert updates
+- AI risk assessment attached to published alerts
 
 ### Multi-Hazard Risk Intelligence
 
@@ -56,6 +57,14 @@ The platform follows an operational workflow:
 - Explainable factor contributions and weights
 - Hazard-specific recommended actions
 - FastAPI risk intelligence service
+- Risk assessment available before publishing an alert
+
+### Notifications
+
+- Live in-app emergency notification center
+- Real-time alert and status-change notifications
+- Critical/high browser notification support
+- Draft alerts are excluded from citizen emergency notifications
 
 ### Geospatial Intelligence
 
@@ -101,6 +110,7 @@ The platform follows an operational workflow:
 - Responder dashboard
 - Admin-wide operations view
 - Real-time task updates
+- Active-assignment protection during responder revocation
 
 ### Resource Management
 
@@ -128,7 +138,7 @@ The platform follows an operational workflow:
 - Government facilities
 - Bridges
 - Operational/damaged/limited/closed status
-- Geospatial mapping
+- Geospatial mapping on the intelligence dashboard
 
 ### Historical Analytics
 
@@ -305,6 +315,7 @@ VITE_SOCKET_URL=http://localhost:5000
 - Run risk scenarios
 - Find shelters and evacuation guidance
 - Report incidents
+- Receive live emergency notifications
 
 ### Responder (`responder`)
 
@@ -316,6 +327,7 @@ VITE_SOCKET_URL=http://localhost:5000
 ### Administrator (`admin`)
 
 - Create and manage alerts
+- Assess and publish AI-assisted risk
 - Manage shelters
 - Verify citizen reports
 - Promote responders
@@ -338,4 +350,4 @@ The resulting score is normalized to 0–100 and classified into low, medium, hi
 
 ## Important Note
 
-The risk engine and evacuation routing are decision-support features. They do not replace official emergency warnings, evacuation orders, emergency services, or local authority instructions.
+The risk engine, notifications, and evacuation routing are decision-support features. They do not replace official emergency warnings, evacuation orders, emergency services, or local authority instructions.
