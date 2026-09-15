@@ -9,7 +9,6 @@ export default function Register() {
     name: "",
     email: "",
     password: "",
-    role: "user",
   });
 
   const [loading, setLoading] = useState(false);
@@ -77,16 +76,6 @@ export default function Register() {
             required
             className="w-full border px-3 py-2 rounded"
           />
-
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
-          >
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-          </select>
 
           <button
             type="submit"
