@@ -6,7 +6,7 @@ import ReportIncident from "./pages/ReportIncident";
 import ReportReview from "./pages/ReportReview";
 import ResponseTeam from "./pages/ResponseTeam";
 import ResponderDashboard from "./pages/ResponderDashboard";
-import ResourceManagement from "./pages/ResourceManagement";
+import Resources from "./pages/Resources";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import Unauthorized from "./pages/Unauthorized";
@@ -18,12 +18,54 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<ProtectedRoute allowedRoles={["user", "admin"]}><Dashboard /></ProtectedRoute>} />
-          <Route path="/responder" element={<ProtectedRoute allowedRoles={["responder", "admin"]}><ResponderDashboard /></ProtectedRoute>} />
-          <Route path="/resources" element={<ProtectedRoute allowedRoles={["responder", "admin"]}><ResourceManagement /></ProtectedRoute>} />
-          <Route path="/report" element={<ProtectedRoute><ReportIncident /></ProtectedRoute>} />
-          <Route path="/reports" element={<ProtectedRoute allowedRoles={["admin"]}><ReportReview /></ProtectedRoute>} />
-          <Route path="/response-team" element={<ProtectedRoute allowedRoles={["admin"]}><ResponseTeam /></ProtectedRoute>} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["user", "admin"]}>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/responder"
+            element={
+              <ProtectedRoute allowedRoles={["responder", "admin"]}>
+                <ResponderDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resources"
+            element={
+              <ProtectedRoute allowedRoles={["responder", "admin"]}>
+                <Resources />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/report"
+            element={
+              <ProtectedRoute>
+                <ReportIncident />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <ReportReview />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/response-team"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <ResponseTeam />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
