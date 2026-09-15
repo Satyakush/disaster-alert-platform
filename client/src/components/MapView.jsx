@@ -22,7 +22,7 @@ function MapCenter({ center }) {
   return null;
 }
 
-export default function MapView({ onRegionSelect, alerts = [], reports = [], shelters = [], route = null }) {
+export default function MapView({ onRegionSelect, alerts = [], reports = [], shelters = [], infrastructure = [], route = null }) {
   const [query, setQuery] = useState("");
   const [center, setCenter] = useState([22.7196, 75.8577]);
   const [marker, setMarker] = useState(null);
@@ -51,7 +51,9 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
   const alertPoints = alerts.filter((alert) => alert.coordinates?.coordinates?.length === 2 && ["active", "escalated"].includes(alert.status));
   const reportPoints = reports.filter((report) => report.coordinates?.coordinates?.length === 2);
   const shelterPoints = shelters.filter((shelter) => shelter.coordinates?.coordinates?.length === 2);
+  const infrastructurePoints = infrastructure.filter((item) => item.coordinates?.coordinates?.length === 2);
   const severityColors = { low: "#22c55e", medium: "#eab308", high: "#f97316", critical: "#ef4444" };
+  const infrastructureStatusColors = { operational: "#16a34a", limited: "#eab308", damaged: "#f97316", closed: "#dc2626" };
   const routePositions = route?.geometry?.coordinates?.map(([lng, lat]) => [lat, lng]) || [];
 
   return (
@@ -62,7 +64,7 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
       </div>
       {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
       {region && <div className="mb-3 text-sm text-slate-600"><div className="flex justify-between"><span>Selected risk radius</span><span className="font-semibold">{region.radius / 1000} km</span></div><input type="range" min="1000" max="20000" step="500" value={region.radius} onChange={(e) => setRegion({ ...region, radius: Number(e.target.value) })} className="w-full" /></div>}
-      <div className="mb-3 flex flex-wrap gap-3 text-xs text-slate-500"><span>● Active alerts: {alertPoints.length}</span><span>● Reports: {reportPoints.length}</span><span>● Shelters: {shelterPoints.length}</span>{route && <span>● Evacuation route ready</span>}</div>
+      <div className="mb-3 flex flex-wrap gap-3 text-xs text-slate-500"><span>● Active alerts: {alertPoints.length}</span><span>● Reports: {reportPoints.length}</span><span>● Shelters: {shelterPoints.length}</span><span>● Infrastructure: {infrastructurePoints.length}</span>{route && <span>● Evacuation route ready</span>}</div>
 
       <MapContainer center={center} zoom={10} style={{ height: "480px", width: "100%", borderRadius: "12px" }}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
@@ -82,6 +84,7 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
         })}
         {reportPoints.map((report) => { const [lng, lat] = report.coordinates.coordinates; return <Marker key={`report-${report._id}`} position={[lat, lng]}><Popup><strong>{report.title}</strong><br />Citizen report · {report.priority}</Popup></Marker>; })}
         {shelterPoints.map((shelter) => { const [lng, lat] = shelter.coordinates.coordinates; return <Marker key={`shelter-${shelter._id}`} position={[lat, lng]}><Popup><strong>{shelter.name}</strong><br />{shelter.availableCapacity} spaces available<br />{shelter.location}</Popup></Marker>; })}
+        {infrastructurePoints.map((item) => { const [lng, lat] = item.coordinates.coordinates; const color = infrastructureStatusColors[item.status] || infrastructureStatusColors.operational; return <Marker key={`infrastructure-${item._id}`} position={[lat, lng]}><Popup><strong>{item.name}</strong><br />{String(item.type || "infrastructure").replaceAll("_", " ")} · {item.status}<br />{item.location}<br />{item.contact || "No contact listed"}</Popup></Marker>; })}
       </MapContainer>
     </div>
   );
