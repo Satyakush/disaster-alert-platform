@@ -113,6 +113,23 @@ const alertSchema = new mongoose.Schema(
         default: [],
       },
     },
+    actualOutcome: {
+      severity: {
+        type: String,
+        enum: ["low", "medium", "high", "critical"],
+      },
+      impact: {
+        type: String,
+        enum: ["none", "limited", "moderate", "severe", "catastrophic"],
+      },
+      recordedAt: {
+        type: Date,
+      },
+      recordedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
