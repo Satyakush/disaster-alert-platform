@@ -103,6 +103,8 @@ export default function Dashboard() {
 
   const handleRegionSelect = (region) => {
     setSelectedRegion(region);
+    setSelectedAlert(null);
+    setRoute(null);
   };
 
   const applySeverityPreset = (severity) => {
