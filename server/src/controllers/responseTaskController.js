@@ -1,5 +1,6 @@
 import Alert from "../models/alert.js";
 import ResponseTask from "../models/responseTask.js";
+import User from "../models/user.js";
 
 const canAccessResponseTeam = (req) => ["responder", "admin"].includes(req.user.role);
 
@@ -38,9 +39,21 @@ export const createResponseTask = async (req, res) => {
       return res.status(400).json({ message: "Alert and responder are required" });
     }
 
-    const alert = await Alert.findById(alertId);
+    const [alert, responder] = await Promise.all([
+      Alert.findById(alertId),
+      User.findById(responderId).select("name email role"),
+    ]);
+
     if (!alert) {
       return res.status(404).json({ message: "Alert not found" });
+    }
+
+    if (!responder) {
+      return res.status(404).json({ message: "Responder not found" });
+    }
+
+    if (responder.role !== "responder") {
+      return res.status(400).json({ message: "Selected user is not an active responder" });
     }
 
     const existingTask = await ResponseTask.findOne({ alert: alertId, responder: responderId });
@@ -65,6 +78,12 @@ export const createResponseTask = async (req, res) => {
 
     res.status(201).json({ task: populatedTask });
   } catch (error) {
+    if (error.name === "ValidationError" || error.name === "CastError") {
+      return res.status(400).json({ message: error.message });
+    }
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "This responder is already assigned to the alert" });
+    }
     console.error(error);
     res.status(500).json({ message: "Failed to create response task" });
   }
@@ -114,6 +133,9 @@ export const updateResponseTask = async (req, res) => {
 
     res.json({ task: populatedTask });
   } catch (error) {
+    if (error.name === "ValidationError" || error.name === "CastError") {
+      return res.status(400).json({ message: error.message });
+    }
     console.error(error);
     res.status(500).json({ message: "Failed to update response task" });
   }
