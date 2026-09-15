@@ -17,6 +17,7 @@ const allowedUpdateFields = [
   "expiresAt",
   "instructions",
   "risk",
+  "actualOutcome",
 ];
 
 const pickFields = (body) =>
@@ -102,7 +103,8 @@ export const getAllAlerts = async (req, res) => {
 
     const alerts = await Alert.find(filter)
       .sort({ createdAt: -1 })
-      .populate("createdBy", "name email role");
+      .populate("createdBy", "name email role")
+      .populate("actualOutcome.recordedBy", "name email role");
 
     return res.status(200).json({ count: alerts.length, alerts });
   } catch (error) {
@@ -115,6 +117,17 @@ export const updateAlert = async (req, res) => {
   try {
     const updates = pickFields(req.body);
 
+    if (Object.prototype.hasOwnProperty.call(updates, "actualOutcome")) {
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required to record alert outcomes" });
+      }
+      updates.actualOutcome = {
+        ...updates.actualOutcome,
+        recordedAt: new Date(),
+        recordedBy: req.user.id,
+      };
+    }
+
     if (!Object.keys(updates).length) {
       return res.status(400).json({ message: "No valid fields provided" });
     }
@@ -122,7 +135,9 @@ export const updateAlert = async (req, res) => {
     const alert = await Alert.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true,
-    }).populate("createdBy", "name email role");
+    })
+      .populate("createdBy", "name email role")
+      .populate("actualOutcome.recordedBy", "name email role");
 
     if (!alert) {
       return res.status(404).json({ message: "Alert not found" });
