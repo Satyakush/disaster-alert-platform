@@ -59,42 +59,30 @@ def main():
     if not DATA_PATH.exists():
         raise FileNotFoundError("Run prepare_emdat.py first.")
 
-    frame = pd.read_csv(DATA_PATH)
-    frame = frame.dropna(subset=[TARGET])
+    frame = pd.read_csv(DATA_PATH).dropna(subset=[TARGET])
+    missing_features = [feature for feature in FEATURES if feature not in frame.columns]
+    if missing_features:
+        raise ValueError(f"Missing training features: {missing_features}")
     if frame.empty:
         raise ValueError("Training dataset is empty.")
+
     class_counts = frame[TARGET].value_counts()
-    if len(class_counts) < 2:
-        raise ValueError("At least two severity classes are required for classification.")
-    if int(class_counts.min()) < 2:
-        raise ValueError("Each severity class needs at least two samples.")
+    if len(class_counts) < 2 or int(class_counts.min()) < 2:
+        raise ValueError("At least two severity classes with two samples each are required.")
 
     x = frame[FEATURES]
     y = frame[TARGET]
-
-    x_train, x_test, y_train, y_test = train_test_split(
-        x,
-        y,
-        test_size=0.2,
-        random_state=42,
-        stratify=y,
-    )
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42, stratify=y)
 
     models = [
-        (
-            "logistic_regression",
-            Pipeline([
-                ("preprocessor", build_preprocessor()),
-                ("model", LogisticRegression(max_iter=1000, class_weight="balanced")),
-            ]),
-        ),
-        (
-            "random_forest",
-            Pipeline([
-                ("preprocessor", build_preprocessor()),
-                ("model", RandomForestClassifier(n_estimators=300, random_state=42, class_weight="balanced_subsample", n_jobs=-1)),
-            ]),
-        ),
+        ("logistic_regression", Pipeline([
+            ("preprocessor", build_preprocessor()),
+            ("model", LogisticRegression(max_iter=1000, class_weight="balanced")),
+        ])),
+        ("random_forest", Pipeline([
+            ("preprocessor", build_preprocessor()),
+            ("model", RandomForestClassifier(n_estimators=300, random_state=42, class_weight="balanced_subsample", n_jobs=-1)),
+        ])),
     ]
 
     results = [evaluate(name, pipeline, x_train, x_test, y_train, y_test) for name, pipeline in models]
@@ -102,7 +90,6 @@ def main():
 
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     joblib.dump(selected["pipeline"], MODEL_DIR / "disaster_severity_model.joblib")
-
     summary = {
         "selected_model": selected["model"],
         "accuracy": selected["accuracy"],
@@ -115,16 +102,7 @@ def main():
         "features": FEATURES,
         "excluded_outcome_features": ["deaths", "affected", "damage_usd", "duration_days"],
         "target": TARGET,
-        "all_models": [
-            {
-                "model": item["model"],
-                "accuracy": item["accuracy"],
-                "weighted_f1": item["weighted_f1"],
-                "cv_weighted_f1_mean": item["cv_weighted_f1_mean"],
-                "cv_weighted_f1_std": item["cv_weighted_f1_std"],
-            }
-            for item in results
-        ],
+        "all_models": [{key: item[key] for key in ["model", "accuracy", "weighted_f1", "cv_weighted_f1_mean", "cv_weighted_f1_std"]} for item in results],
     }
     (MODEL_DIR / "evaluation.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary, indent=2))
