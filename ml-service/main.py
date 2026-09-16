@@ -2,19 +2,21 @@ from pathlib import Path
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from typing import Any, Dict
+import json
 import joblib
 import pandas as pd
 
-app = FastAPI(title="Disaster Risk Intelligence Service", version="2.3.0")
-MODEL_PATH = Path(__file__).resolve().parent / "models" / "disaster_severity_model.joblib"
+app = FastAPI(title="Disaster Risk Intelligence Service", version="2.4.0")
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "models" / "disaster_severity_model.joblib"
+EVALUATION_PATH = BASE_DIR / "models" / "evaluation.json"
+FEATURES = ["disaster_type", "latitude", "longitude", "year", "month"]
 model = joblib.load(MODEL_PATH) if MODEL_PATH.exists() else None
-
 
 class RiskRequest(BaseModel):
     region: Dict[str, Any]
     hazard: Dict[str, Any] = Field(default_factory=dict)
     meta: Dict[str, Any] = Field(default_factory=dict)
-
 
 def number(data: Dict[str, Any], key: str, default: float = 0.0) -> float:
     value = data.get(key, default)
@@ -23,14 +25,12 @@ def number(data: Dict[str, Any], key: str, default: float = 0.0) -> float:
     except (TypeError, ValueError):
         return default
 
-
 def integer(data: Dict[str, Any], key: str, default: int) -> int:
     value = data.get(key, default)
     try:
         return int(float(value))
     except (TypeError, ValueError):
         return default
-
 
 def coordinate(data: Dict[str, Any], keys: list[str], default: float = 0.0) -> float:
     for key in keys:
@@ -41,11 +41,9 @@ def coordinate(data: Dict[str, Any], keys: list[str], default: float = 0.0) -> f
             continue
     return default
 
-
 def text(data: Dict[str, Any], key: str, default: str) -> str:
     value = data.get(key, default)
     return str(value).strip() or default
-
 
 def level(score: float) -> str:
     if score >= 75:
@@ -55,7 +53,6 @@ def level(score: float) -> str:
     if score >= 25:
         return "medium"
     return "low"
-
 
 def action_for(level_name: str, hazard_type: str) -> list[str]:
     actions = {
@@ -77,7 +74,6 @@ def action_for(level_name: str, hazard_type: str) -> list[str]:
         result.append("Keep away from unstable slopes and recently affected areas.")
     return result
 
-
 def baseline_prediction(data: RiskRequest):
     hazard = data.hazard
     region = data.region
@@ -94,7 +90,6 @@ def baseline_prediction(data: RiskRequest):
     factors = [{"name": name, "value": round(value, 2), "weight": weight, "contribution": round(value * weight, 2)} for name, value, weight in components]
     return {"riskScore": score, "riskLevel": risk_level, "confidence": confidence, "factors": factors, "recommendedActions": action_for(risk_level, text(hazard, "type", "other").lower()), "method": "weighted-risk-model-v1"}
 
-
 def trained_prediction(data: RiskRequest):
     hazard = data.hazard
     region = data.region
@@ -105,7 +100,7 @@ def trained_prediction(data: RiskRequest):
         "longitude": coordinate(region, ["lng", "lon", "longitude"]),
         "year": integer(region, "year", current_time.year),
         "month": integer(region, "month", current_time.month),
-    }])
+    }], columns=FEATURES)
     prediction = str(model.predict(row)[0])
     probabilities = model.predict_proba(row)[0] if hasattr(model, "predict_proba") else []
     classes = model.classes_ if hasattr(model, "classes_") else []
@@ -114,11 +109,19 @@ def trained_prediction(data: RiskRequest):
     score_map = {"low": 20, "medium": 45, "high": 70, "critical": 90}
     return {"riskScore": score_map.get(prediction, 50), "riskLevel": prediction, "confidence": round(confidence, 4), "probabilities": probability_map, "recommendedActions": action_for(prediction, text(hazard, "type", "other").lower()), "method": "trained-supervised-model"}
 
-
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "risk-intelligence", "modelLoaded": model is not None, "modelPath": str(MODEL_PATH)}
+    return {"status": "ok", "service": "risk-intelligence", "modelLoaded": model is not None, "modelPath": str(MODEL_PATH), "features": FEATURES}
 
+@app.get("/model-info")
+def model_info():
+    evaluation = {}
+    if EVALUATION_PATH.exists():
+        try:
+            evaluation = json.loads(EVALUATION_PATH.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            evaluation = {}
+    return {"modelLoaded": model is not None, "features": FEATURES, "target": "severity_class", "evaluation": evaluation}
 
 @app.post("/analyze-risk")
 def analyze_risk(data: RiskRequest):
