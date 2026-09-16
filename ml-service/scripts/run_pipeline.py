@@ -9,6 +9,7 @@ STEPS = [
     "prepare_emdat.py",
     "validate_dataset.py",
     "train_model.py",
+    "smoke_test.py",
 ]
 
 
