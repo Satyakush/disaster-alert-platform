@@ -5,7 +5,7 @@ from typing import Any, Dict
 import joblib
 import pandas as pd
 
-app = FastAPI(title="Disaster Risk Intelligence Service", version="2.0.0")
+app = FastAPI(title="Disaster Risk Intelligence Service", version="2.1.0")
 MODEL_PATH = Path(__file__).resolve().parent / "models" / "disaster_severity_model.joblib"
 model = joblib.load(MODEL_PATH) if MODEL_PATH.exists() else None
 
@@ -22,6 +22,19 @@ def number(data: Dict[str, Any], key: str, default: float = 0.0) -> float:
         return max(0.0, min(100.0, float(value)))
     except (TypeError, ValueError):
         return default
+
+
+def integer(data: Dict[str, Any], key: str, default: int) -> int:
+    value = data.get(key, default)
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return default
+
+
+def text(data: Dict[str, Any], key: str, default: str) -> str:
+    value = data.get(key, default)
+    return str(value).strip() or default
 
 
 def level(score: float) -> str:
@@ -76,19 +89,27 @@ def baseline_prediction(data: RiskRequest):
     confidence = round(0.55 + (supplied / 5) * 0.4, 2)
     factors = [{"name": name, "value": round(value, 2), "weight": weight, "contribution": round(value * weight, 2)} for name, value, weight in components]
     hazard_type = str(hazard.get("type", "other")).lower()
-    return {"riskScore": score, "riskLevel": risk_level, "confidence": confidence, "factors": factors, "recommendedActions": action_for(risk_level, hazard_type), "method": "weighted-risk-model-v1"}
+    return {
+        "riskScore": score,
+        "riskLevel": risk_level,
+        "confidence": confidence,
+        "factors": factors,
+        "recommendedActions": action_for(risk_level, hazard_type),
+        "method": "weighted-risk-model-v1",
+    }
 
 
 def trained_prediction(data: RiskRequest):
     hazard = data.hazard
     region = data.region
+    current_time = pd.Timestamp.utcnow()
     row = pd.DataFrame([{
-        "disaster_type": str(hazard.get("type", "other")).lower(),
-        "country": region.get("country", "unknown"),
-        "region": region.get("region", "unknown"),
-        "year": region.get("year", pd.Timestamp.utcnow().year),
-        "month": region.get("month", pd.Timestamp.utcnow().month),
-        "duration_days": region.get("duration_days", 0),
+        "disaster_type": text(hazard, "type", "other").lower(),
+        "country": text(region, "country", "unknown"),
+        "region": text(region, "region", "unknown"),
+        "year": integer(region, "year", current_time.year),
+        "month": integer(region, "month", current_time.month),
+        "duration_days": max(0, integer(region, "duration_days", 0)),
     }])
     prediction = str(model.predict(row)[0])
     probabilities = model.predict_proba(row)[0] if hasattr(model, "predict_proba") else []
@@ -101,14 +122,19 @@ def trained_prediction(data: RiskRequest):
         "riskLevel": prediction,
         "confidence": round(confidence, 4),
         "probabilities": probability_map,
-        "recommendedActions": action_for(prediction, str(hazard.get("type", "other")).lower()),
+        "recommendedActions": action_for(prediction, text(hazard, "type", "other").lower()),
         "method": "trained-supervised-model",
     }
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "risk-intelligence", "modelLoaded": model is not None}
+    return {
+        "status": "ok",
+        "service": "risk-intelligence",
+        "modelLoaded": model is not None,
+        "modelPath": str(MODEL_PATH),
+    }
 
 
 @app.post("/analyze-risk")
