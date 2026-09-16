@@ -11,6 +11,7 @@ REQUIRED_COLUMNS = [
     "disaster_type",
     "latitude",
     "longitude",
+    "year",
     "month",
     "duration_days",
     "deaths",
@@ -30,6 +31,7 @@ def main():
         raise ValueError(f"Missing required columns: {missing_columns}")
 
     duplicate_rows = int(frame.duplicated().sum())
+    invalid_years = int((frame["year"].notna() & ~frame["year"].between(1900, pd.Timestamp.utcnow().year + 1)).sum())
     invalid_months = int((frame["month"].notna() & ~frame["month"].between(1, 12)).sum())
     negative_duration = int((frame["duration_days"] < 0).sum())
     negative_deaths = int((frame["deaths"] < 0).sum())
@@ -46,6 +48,7 @@ def main():
         "rows": len(frame),
         "columns": list(frame.columns),
         "duplicate_rows": duplicate_rows,
+        "invalid_years": invalid_years,
         "invalid_months": invalid_months,
         "invalid_latitude": invalid_latitude,
         "invalid_longitude": invalid_longitude,
@@ -57,6 +60,7 @@ def main():
         "missingness": missingness,
         "class_distribution": class_distribution,
         "ready_for_training": len(frame) > 0 and not unexpected_classes and all(value == 0 for value in [
+            invalid_years,
             invalid_months,
             invalid_latitude,
             invalid_longitude,
