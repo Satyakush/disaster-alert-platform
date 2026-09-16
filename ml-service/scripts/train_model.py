@@ -15,10 +15,10 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_PATH = BASE_DIR / "data" / "processed" / "disaster_training.csv"
 MODEL_DIR = BASE_DIR / "models"
 
-FEATURES = ["disaster_type", "latitude", "longitude", "month", "duration_days"]
+FEATURES = ["disaster_type", "latitude", "longitude", "year", "month"]
 TARGET = "severity_class"
 CATEGORICAL = ["disaster_type"]
-NUMERICAL = ["latitude", "longitude", "month", "duration_days"]
+NUMERICAL = ["latitude", "longitude", "year", "month"]
 
 
 def build_preprocessor():
@@ -113,6 +113,7 @@ def main():
         "test_size": 0.2,
         "random_state": 42,
         "features": FEATURES,
+        "excluded_outcome_features": ["deaths", "affected", "damage_usd", "duration_days"],
         "target": TARGET,
         "all_models": [
             {
