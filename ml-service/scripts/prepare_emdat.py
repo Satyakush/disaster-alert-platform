@@ -4,18 +4,7 @@ import pandas as pd
 BASE_DIR = Path(__file__).resolve().parents[1]
 RAW_DIR = BASE_DIR / "data" / "raw"
 PROCESSED_DIR = BASE_DIR / "data" / "processed"
-
-OUTPUT_COLUMNS = [
-    "disaster_type",
-    "latitude",
-    "longitude",
-    "month",
-    "duration_days",
-    "deaths",
-    "affected",
-    "damage_usd",
-    "severity_class",
-]
+OUTPUT_COLUMNS = ["disaster_type", "latitude", "longitude", "year", "month", "duration_days", "deaths", "affected", "damage_usd", "severity_class"]
 
 
 def find_input():
@@ -32,10 +21,7 @@ def normalize_name(value):
 
 def find_column(columns, aliases):
     normalized = {normalize_name(column): column for column in columns}
-    for alias in aliases:
-        if normalize_name(alias) in normalized:
-            return normalized[normalize_name(alias)]
-    return None
+    return next((normalized[normalize_name(alias)] for alias in aliases if normalize_name(alias) in normalized), None)
 
 
 def numeric(frame, column):
@@ -55,74 +41,41 @@ def severity_class(row):
     affected = max(float(row["affected"]), 0.0)
     damage = max(float(row["damage_usd"]), 0.0)
     score = 0
-    if deaths >= 1000:
-        score += 3
-    elif deaths >= 100:
-        score += 2
-    elif deaths >= 10:
-        score += 1
-    if affected >= 1000000:
-        score += 3
-    elif affected >= 100000:
-        score += 2
-    elif affected >= 10000:
-        score += 1
-    if damage >= 1_000_000_000:
-        score += 3
-    elif damage >= 100_000_000:
-        score += 2
-    elif damage >= 10_000_000:
-        score += 1
-    if score >= 6:
-        return "critical"
-    if score >= 4:
-        return "high"
-    if score >= 2:
-        return "medium"
-    return "low"
+    score += 3 if deaths >= 1000 else 2 if deaths >= 100 else 1 if deaths >= 10 else 0
+    score += 3 if affected >= 1000000 else 2 if affected >= 100000 else 1 if affected >= 10000 else 0
+    score += 3 if damage >= 1_000_000_000 else 2 if damage >= 100_000_000 else 1 if damage >= 10_000_000 else 0
+    return "critical" if score >= 6 else "high" if score >= 4 else "medium" if score >= 2 else "low"
 
 
 def main():
     input_path = find_input()
-    if input_path.suffix.lower() in {".xlsx", ".xls"}:
-        frame = pd.read_excel(input_path)
-    else:
-        frame = pd.read_csv(input_path, low_memory=False)
-
-    disaster_type_column = find_column(frame.columns, ["Disaster Type", "Disaster Subgroup"])
-    latitude_column = find_column(frame.columns, ["Latitude", "Lat"])
-    longitude_column = find_column(frame.columns, ["Longitude", "Long", "Lon"])
-    start_month_column = find_column(frame.columns, ["Start Month"])
-    start_year_column = find_column(frame.columns, ["Start Year", "Year"])
-    end_date_column = find_column(frame.columns, ["End Date"])
-    start_date_column = find_column(frame.columns, ["Start Date"])
-    deaths_column = find_column(frame.columns, ["Total Deaths", "Deaths"])
-    affected_column = find_column(frame.columns, ["Total Affected", "Affected"])
-    damage_column = find_column(frame.columns, ["Total Damage (000 US$)", "Total Damage"])
-
+    frame = pd.read_excel(input_path) if input_path.suffix.lower() in {".xlsx", ".xls"} else pd.read_csv(input_path, low_memory=False)
+    disaster_type = find_column(frame.columns, ["Disaster Type", "Disaster Subgroup"])
+    latitude = find_column(frame.columns, ["Latitude", "Lat"])
+    longitude = find_column(frame.columns, ["Longitude", "Long", "Lon"])
+    start_month = find_column(frame.columns, ["Start Month"])
+    start_year = find_column(frame.columns, ["Start Year", "Year"])
+    end_date = find_column(frame.columns, ["End Date"])
+    start_date = find_column(frame.columns, ["Start Date"])
+    deaths = find_column(frame.columns, ["Total Deaths", "Deaths"])
+    affected = find_column(frame.columns, ["Total Affected", "Affected"])
+    damage = find_column(frame.columns, ["Total Damage (000 US$)", "Total Damage"])
     prepared = pd.DataFrame(index=frame.index)
-    prepared["disaster_type"] = text(frame, disaster_type_column).str.lower()
-    prepared["latitude"] = numeric(frame, latitude_column)
-    prepared["longitude"] = numeric(frame, longitude_column)
-    prepared["year"] = numeric(frame, start_year_column)
-    prepared["month"] = numeric(frame, start_month_column)
-    prepared["deaths"] = numeric(frame, deaths_column).fillna(0).clip(lower=0)
-    prepared["affected"] = numeric(frame, affected_column).fillna(0).clip(lower=0)
-    prepared["damage_usd"] = numeric(frame, damage_column).fillna(0).clip(lower=0) * 1000
-
-    if start_date_column and end_date_column:
-        start = pd.to_datetime(frame[start_date_column], errors="coerce")
-        end = pd.to_datetime(frame[end_date_column], errors="coerce")
-        prepared["duration_days"] = (end - start).dt.days.fillna(0).clip(lower=0)
+    prepared["disaster_type"] = text(frame, disaster_type).str.lower()
+    prepared["latitude"] = numeric(frame, latitude)
+    prepared["longitude"] = numeric(frame, longitude)
+    prepared["year"] = numeric(frame, start_year)
+    prepared["month"] = numeric(frame, start_month)
+    prepared["deaths"] = numeric(frame, deaths).fillna(0).clip(lower=0)
+    prepared["affected"] = numeric(frame, affected).fillna(0).clip(lower=0)
+    prepared["damage_usd"] = numeric(frame, damage).fillna(0).clip(lower=0) * 1000
+    if start_date and end_date:
+        prepared["duration_days"] = (pd.to_datetime(frame[end_date], errors="coerce") - pd.to_datetime(frame[start_date], errors="coerce")).dt.days.fillna(0).clip(lower=0)
     else:
         prepared["duration_days"] = 0
-
     prepared["severity_class"] = prepared.apply(severity_class, axis=1)
-    prepared = prepared[OUTPUT_COLUMNS + ["year"]].dropna(subset=["disaster_type"])
-    prepared = prepared[prepared["month"].between(1, 12) | prepared["month"].isna()]
-    prepared = prepared[prepared["year"].between(1900, pd.Timestamp.utcnow().year + 1) | prepared["year"].isna()]
-    prepared = prepared.reset_index(drop=True)
-
+    prepared = prepared[OUTPUT_COLUMNS].dropna(subset=["disaster_type"])
+    prepared = prepared[(prepared["month"].between(1, 12) | prepared["month"].isna()) & (prepared["year"].between(1900, pd.Timestamp.utcnow().year + 1) | prepared["year"].isna())].reset_index(drop=True)
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     output_path = PROCESSED_DIR / "disaster_training.csv"
     prepared.to_csv(output_path, index=False)
