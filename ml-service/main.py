@@ -32,6 +32,16 @@ def integer(data: Dict[str, Any], key: str, default: int) -> int:
         return default
 
 
+def coordinate(data: Dict[str, Any], keys: list[str], default: float = 0.0) -> float:
+    for key in keys:
+        value = data.get(key)
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+    return default
+
+
 def text(data: Dict[str, Any], key: str, default: str) -> str:
     value = data.get(key, default)
     return str(value).strip() or default
@@ -88,7 +98,7 @@ def baseline_prediction(data: RiskRequest):
     supplied = sum(1 for value in [hazard.get("intensity"), hazard.get("probability"), region.get("exposure"), region.get("vulnerability"), region.get("historicalRisk")] if value is not None)
     confidence = round(0.55 + (supplied / 5) * 0.4, 2)
     factors = [{"name": name, "value": round(value, 2), "weight": weight, "contribution": round(value * weight, 2)} for name, value, weight in components]
-    hazard_type = str(hazard.get("type", "other")).lower()
+    hazard_type = text(hazard, "type", "other").lower()
     return {
         "riskScore": score,
         "riskLevel": risk_level,
@@ -105,9 +115,8 @@ def trained_prediction(data: RiskRequest):
     current_time = pd.Timestamp.utcnow()
     row = pd.DataFrame([{
         "disaster_type": text(hazard, "type", "other").lower(),
-        "country": text(region, "country", "unknown"),
-        "region": text(region, "region", "unknown"),
-        "year": integer(region, "year", current_time.year),
+        "latitude": coordinate(region, ["lat", "latitude"]),
+        "longitude": coordinate(region, ["lng", "lon", "longitude"]),
         "month": integer(region, "month", current_time.month),
         "duration_days": max(0, integer(region, "duration_days", 0)),
     }])
