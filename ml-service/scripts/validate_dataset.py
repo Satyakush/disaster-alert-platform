@@ -9,9 +9,8 @@ OUTPUT_PATH = PROCESSED_DIR / "dataset_validation.json"
 
 REQUIRED_COLUMNS = [
     "disaster_type",
-    "country",
-    "region",
-    "year",
+    "latitude",
+    "longitude",
     "month",
     "duration_days",
     "deaths",
@@ -31,35 +30,41 @@ def main():
         raise ValueError(f"Missing required columns: {missing_columns}")
 
     duplicate_rows = int(frame.duplicated().sum())
-    invalid_months = int((~frame["month"].between(1, 12)).sum())
-    invalid_years = int((~frame["year"].between(1900, pd.Timestamp.utcnow().year + 1)).sum())
+    invalid_months = int((frame["month"].notna() & ~frame["month"].between(1, 12)).sum())
     negative_duration = int((frame["duration_days"] < 0).sum())
     negative_deaths = int((frame["deaths"] < 0).sum())
     negative_affected = int((frame["affected"] < 0).sum())
     negative_damage = int((frame["damage_usd"] < 0).sum())
+    invalid_latitude = int((frame["latitude"].notna() & ~frame["latitude"].between(-90, 90)).sum())
+    invalid_longitude = int((frame["longitude"].notna() & ~frame["longitude"].between(-180, 180)).sum())
     missingness = frame[REQUIRED_COLUMNS].isna().mean().round(4).to_dict()
     class_distribution = frame["severity_class"].value_counts(dropna=False).to_dict()
+    valid_classes = {"low", "medium", "high", "critical"}
+    unexpected_classes = sorted(set(frame["severity_class"].dropna().unique()).difference(valid_classes))
 
     summary = {
         "rows": len(frame),
         "columns": list(frame.columns),
         "duplicate_rows": duplicate_rows,
         "invalid_months": invalid_months,
-        "invalid_years": invalid_years,
+        "invalid_latitude": invalid_latitude,
+        "invalid_longitude": invalid_longitude,
         "negative_duration": negative_duration,
         "negative_deaths": negative_deaths,
         "negative_affected": negative_affected,
         "negative_damage": negative_damage,
+        "unexpected_classes": unexpected_classes,
         "missingness": missingness,
         "class_distribution": class_distribution,
-        "ready_for_training": all(value == 0 for value in [
+        "ready_for_training": len(frame) > 0 and not unexpected_classes and all(value == 0 for value in [
             invalid_months,
-            invalid_years,
+            invalid_latitude,
+            invalid_longitude,
             negative_duration,
             negative_deaths,
             negative_affected,
             negative_damage,
-        ]) and len(frame) > 0,
+        ]),
     }
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
