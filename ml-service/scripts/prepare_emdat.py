@@ -93,6 +93,7 @@ def main():
     latitude_column = find_column(frame.columns, ["Latitude", "Lat"])
     longitude_column = find_column(frame.columns, ["Longitude", "Long", "Lon"])
     start_month_column = find_column(frame.columns, ["Start Month"])
+    start_year_column = find_column(frame.columns, ["Start Year", "Year"])
     end_date_column = find_column(frame.columns, ["End Date"])
     start_date_column = find_column(frame.columns, ["Start Date"])
     deaths_column = find_column(frame.columns, ["Total Deaths", "Deaths"])
@@ -103,6 +104,7 @@ def main():
     prepared["disaster_type"] = text(frame, disaster_type_column).str.lower()
     prepared["latitude"] = numeric(frame, latitude_column)
     prepared["longitude"] = numeric(frame, longitude_column)
+    prepared["year"] = numeric(frame, start_year_column)
     prepared["month"] = numeric(frame, start_month_column)
     prepared["deaths"] = numeric(frame, deaths_column).fillna(0).clip(lower=0)
     prepared["affected"] = numeric(frame, affected_column).fillna(0).clip(lower=0)
@@ -116,8 +118,10 @@ def main():
         prepared["duration_days"] = 0
 
     prepared["severity_class"] = prepared.apply(severity_class, axis=1)
-    prepared = prepared[OUTPUT_COLUMNS].dropna(subset=["disaster_type"])
-    prepared = prepared[prepared["month"].between(1, 12) | prepared["month"].isna()].reset_index(drop=True)
+    prepared = prepared[OUTPUT_COLUMNS + ["year"]].dropna(subset=["disaster_type"])
+    prepared = prepared[prepared["month"].between(1, 12) | prepared["month"].isna()]
+    prepared = prepared[prepared["year"].between(1900, pd.Timestamp.utcnow().year + 1) | prepared["year"].isna()]
+    prepared = prepared.reset_index(drop=True)
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     output_path = PROCESSED_DIR / "disaster_training.csv"
