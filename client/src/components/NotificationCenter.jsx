@@ -18,6 +18,7 @@ export default function NotificationCenter() {
       if (!alert?._id || (event === "alert:created" && alert.status === "draft")) return;
       const notification = {
         id: `${event}-${alert._id}-${Date.now()}`,
+        alertId: String(alert._id),
         title: alert.title || "Disaster alert update",
         message: event === "alert:created" ? "A new disaster alert has been published." : `Alert status changed to ${alert.status}.`,
         severity: alert.severity || "medium",
@@ -34,7 +35,7 @@ export default function NotificationCenter() {
     const handleUpdated = (alert) => addNotification(alert, "alert:updated");
     const handleDeleted = ({ id }) => {
       if (!id) return;
-      setNotifications((current) => current.filter((notification) => !notification.id.endsWith(`-${id}`)));
+      setNotifications((current) => current.filter((notification) => notification.alertId !== String(id)));
     };
 
     socket.on("alert:created", handleCreated);
