@@ -8,7 +8,7 @@ React dashboard → Node.js risk controller → FastAPI → trained scikit-learn
 
 If a trained model artifact is unavailable, FastAPI falls back to the deterministic weighted-risk model so the application remains usable during development.
 
-## ML workflow
+## Complete workflow
 
 ```text
 Permitted EM-DAT export
@@ -19,11 +19,15 @@ disaster_training.csv
         ↓
 validate_dataset.py
         ↓
+validation gate
+        ↓
 train_model.py
         ↓
-Model evaluation + joblib artifact
+model + evaluation.json
         ↓
 smoke_test.py
+        ↓
+check_ml_artifacts.py
         ↓
 FastAPI inference
 ```
@@ -50,7 +54,7 @@ The severity label is derived from historical impact variables such as deaths, a
 
 ## Current model features
 
-The current training and inference schema is intentionally aligned:
+The training and production inference schema is aligned:
 
 - disaster type
 - latitude
@@ -62,18 +66,68 @@ Categorical data is one-hot encoded. Numerical data uses median imputation and s
 
 Event impact fields such as deaths, affected population, damage, and duration are retained in the prepared dataset for validation and label construction but are not used as prediction features.
 
-## Model persistence
+## Validation and artifacts
 
-The selected preprocessing-and-model pipeline is saved as `models/disaster_severity_model.joblib`. Evaluation metadata is written to `models/evaluation.json`. Generated datasets, model binaries, and evaluation artifacts are excluded from Git.
+`validate_dataset.py` checks schema, ranges, negative values, unexpected classes, missingness, and class distribution before training. `run_pipeline.py` stops before training when the validation report is not ready for training.
+
+The selected preprocessing-and-model pipeline is saved as `models/disaster_severity_model.joblib`. Evaluation metadata is written to `models/evaluation.json`. `check_ml_artifacts.py` verifies the persisted artifact, evaluation metadata, validation state, and production feature schema.
+
+Generated datasets, model binaries, and evaluation artifacts are excluded from Git.
 
 ## Runtime behavior
 
-FastAPI loads the trained artifact when it exists. The `/analyze-risk` endpoint returns the predicted severity, class probabilities when supported, confidence, risk score, recommended actions, and model method. Without a trained artifact, the endpoint uses the weighted-risk baseline.
+FastAPI loads the trained artifact when it exists. `/analyze-risk` returns predicted severity, class probabilities when supported, confidence, risk score, recommended actions, and model method. Without a trained artifact, the endpoint uses the weighted-risk baseline.
+
+Operational endpoints:
+
+- `GET /health` — service and model-loaded status plus feature schema
+- `GET /model-info` — model availability, target, feature schema, and evaluation metadata
+- `POST /analyze-risk` — production risk inference
+
+## Local setup
+
+From `ml-service`:
+
+```bash
+python -m venv .venv
+```
+
+Windows:
+
+```bash
+.venv\Scripts\activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Place the permitted EM-DAT export in `data/raw/`, then run:
+
+```bash
+python scripts/run_pipeline.py
+```
+
+Start the API:
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+The Node backend should use `ML_SERVICE_URL=http://localhost:8000`.
 
 ## Model smoke test
 
-After training, `smoke_test.py` loads the persisted pipeline and sends a representative inference row through the exact saved preprocessing/model chain. It verifies that the output is a supported severity class and that returned probabilities are valid when available.
+After training, `smoke_test.py` loads the persisted pipeline and sends a representative inference row through the exact saved preprocessing/model chain. It verifies that the output is a supported severity class and that probabilities are valid when available.
 
 ## Interview explanation
 
-The ML integration extends an existing deterministic risk baseline with a reproducible supervised-learning pipeline. Historical disaster data is cleaned and normalized, an impact-based severity target is defined, outcome variables are excluded from prediction features, the dataset is validated, mixed data types are preprocessed inside a single scikit-learn pipeline, multiple classifiers are compared with stratified validation, the selected pipeline is persisted with joblib, and FastAPI exposes the artifact through the existing risk-analysis boundary.
+The ML integration extends an existing deterministic risk baseline with a reproducible supervised-learning pipeline. Historical disaster data is cleaned and normalized, an impact-based severity target is defined, outcome variables are excluded from prediction features, the dataset is validated before training, mixed data types are preprocessed inside a single scikit-learn pipeline, multiple classifiers are compared with stratified validation, the selected pipeline is persisted with joblib, artifacts are checked before use, and FastAPI exposes the trained model through the existing risk-analysis boundary.
+
+## Current integration boundary
+
+React sends region and hazard information to the Node.js risk endpoint. Node forwards the request to FastAPI. FastAPI converts the request into the exact five-feature model schema and returns the prediction to Node, which passes the result back to the client.
+
+Actual model metrics and production inference are not claimed until the permitted EM-DAT dataset is supplied and the local pipeline is executed successfully.
