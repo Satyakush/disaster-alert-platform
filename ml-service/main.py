@@ -5,7 +5,7 @@ from typing import Any, Dict
 import joblib
 import pandas as pd
 
-app = FastAPI(title="Disaster Risk Intelligence Service", version="2.2.0")
+app = FastAPI(title="Disaster Risk Intelligence Service", version="2.3.0")
 MODEL_PATH = Path(__file__).resolve().parent / "models" / "disaster_severity_model.joblib"
 model = joblib.load(MODEL_PATH) if MODEL_PATH.exists() else None
 
@@ -86,27 +86,13 @@ def baseline_prediction(data: RiskRequest):
     exposure = number(region, "exposure", number(region, "populationDensity"))
     vulnerability = number(region, "vulnerability", number(region, "terrainVulnerability"))
     historical = number(region, "historicalRisk", number(region, "historicalDisasters"))
-    components = [
-        ("hazard_intensity", hazard_intensity, 0.30),
-        ("hazard_probability", hazard_probability, 0.20),
-        ("exposure", exposure, 0.20),
-        ("vulnerability", vulnerability, 0.20),
-        ("historical_risk", historical, 0.10),
-    ]
+    components = [("hazard_intensity", hazard_intensity, 0.30), ("hazard_probability", hazard_probability, 0.20), ("exposure", exposure, 0.20), ("vulnerability", vulnerability, 0.20), ("historical_risk", historical, 0.10)]
     score = round(sum(value * weight for _, value, weight in components), 2)
     risk_level = level(score)
     supplied = sum(1 for value in [hazard.get("intensity"), hazard.get("probability"), region.get("exposure"), region.get("vulnerability"), region.get("historicalRisk")] if value is not None)
     confidence = round(0.55 + (supplied / 5) * 0.4, 2)
     factors = [{"name": name, "value": round(value, 2), "weight": weight, "contribution": round(value * weight, 2)} for name, value, weight in components]
-    hazard_type = text(hazard, "type", "other").lower()
-    return {
-        "riskScore": score,
-        "riskLevel": risk_level,
-        "confidence": confidence,
-        "factors": factors,
-        "recommendedActions": action_for(risk_level, hazard_type),
-        "method": "weighted-risk-model-v1",
-    }
+    return {"riskScore": score, "riskLevel": risk_level, "confidence": confidence, "factors": factors, "recommendedActions": action_for(risk_level, text(hazard, "type", "other").lower()), "method": "weighted-risk-model-v1"}
 
 
 def trained_prediction(data: RiskRequest):
@@ -126,24 +112,12 @@ def trained_prediction(data: RiskRequest):
     confidence = float(max(probabilities)) if len(probabilities) else 0.0
     probability_map = {str(label): round(float(value), 4) for label, value in zip(classes, probabilities)}
     score_map = {"low": 20, "medium": 45, "high": 70, "critical": 90}
-    return {
-        "riskScore": score_map.get(prediction, 50),
-        "riskLevel": prediction,
-        "confidence": round(confidence, 4),
-        "probabilities": probability_map,
-        "recommendedActions": action_for(prediction, text(hazard, "type", "other").lower()),
-        "method": "trained-supervised-model",
-    }
+    return {"riskScore": score_map.get(prediction, 50), "riskLevel": prediction, "confidence": round(confidence, 4), "probabilities": probability_map, "recommendedActions": action_for(prediction, text(hazard, "type", "other").lower()), "method": "trained-supervised-model"}
 
 
 @app.get("/health")
 def health():
-    return {
-        "status": "ok",
-        "service": "risk-intelligence",
-        "modelLoaded": model is not None,
-        "modelPath": str(MODEL_PATH),
-    }
+    return {"status": "ok", "service": "risk-intelligence", "modelLoaded": model is not None, "modelPath": str(MODEL_PATH)}
 
 
 @app.post("/analyze-risk")
