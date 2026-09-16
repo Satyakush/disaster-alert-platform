@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, Circle, Popup, Polyline, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Circle, Popup, Polyline, Pane, useMap, useMapEvents } from "react-leaflet";
 import { useEffect, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { searchPlace } from "../api/geocode";
@@ -24,7 +24,9 @@ function ClickHandler({ setRegion, setMarker }) {
 
 function MapCenter({ center }) {
   const map = useMap();
-  useEffect(() => { map.setView(center, Math.max(map.getZoom(), 10), { animate: true }); }, [center, map]);
+  useEffect(() => {
+    map.setView(center, Math.max(map.getZoom(), 10), { animate: true });
+  }, [center, map]);
   return null;
 }
 
@@ -33,14 +35,18 @@ function RouteView({ positions }) {
 
   useEffect(() => {
     if (positions.length < 2) return;
-    map.fitBounds(positions, { padding: [40, 40], maxZoom: 13, animate: true });
+    map.invalidateSize({ pan: false });
+    const bounds = L.latLngBounds(positions);
+    requestAnimationFrame(() => {
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14, animate: true });
+    });
   }, [map, positions]);
 
   if (positions.length < 2) return null;
 
   return (
-    <>
-      <Polyline positions={positions} pathOptions={{ color: "#2563eb", weight: 7, opacity: 0.9 }}>
+    <Pane name="evacuationRoute" style={{ zIndex: 700 }}>
+      <Polyline positions={positions} pathOptions={{ color: "#2563eb", weight: 8, opacity: 1, lineCap: "round", lineJoin: "round" }}>
         <Popup>Recommended evacuation route</Popup>
       </Polyline>
       <Marker position={positions[0]}>
@@ -49,7 +55,7 @@ function RouteView({ positions }) {
       <Marker position={positions[positions.length - 1]}>
         <Popup>Safe shelter destination</Popup>
       </Marker>
-    </>
+    </Pane>
   );
 }
 
@@ -68,7 +74,10 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
     if (!query.trim()) return;
     try {
       const results = await searchPlace(query.trim());
-      if (!results.length) { setError("Location not found"); return; }
+      if (!results.length) {
+        setError("Location not found");
+        return;
+      }
       const place = results[0];
       const lat = parseFloat(place.lat);
       const lng = parseFloat(place.lon);
@@ -76,7 +85,9 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
       setMarker([lat, lng]);
       setRegion({ lat, lng, radius: 3000 });
       setError("");
-    } catch { setError("Search failed"); }
+    } catch {
+      setError("Search failed");
+    }
   };
 
   const alertPoints = alerts.filter((alert) => alert.coordinates?.coordinates?.length === 2 && ["active", "escalated"].includes(alert.status));
@@ -84,7 +95,9 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
   const shelterPoints = shelters.filter((shelter) => shelter.coordinates?.coordinates?.length === 2);
   const infrastructurePoints = infrastructure.filter((item) => item.coordinates?.coordinates?.length === 2);
   const severityColors = { low: "#22c55e", medium: "#eab308", high: "#f97316", critical: "#ef4444" };
-  const routePositions = route?.geometry?.coordinates?.map(([lng, lat]) => [lat, lng]) || [];
+  const routePositions = route?.geometry?.type === "LineString" && Array.isArray(route.geometry.coordinates)
+    ? route.geometry.coordinates.filter((point) => Array.isArray(point) && point.length >= 2 && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1]))).map(([lng, lat]) => [lat, lng])
+    : [];
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -94,7 +107,7 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
       </div>
       {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
       {region && <div className="mb-3 text-sm text-slate-600"><div className="flex justify-between"><span>Selected risk radius</span><span className="font-semibold">{region.radius / 1000} km</span></div><input type="range" min="1000" max="20000" step="500" value={region.radius} onChange={(e) => setRegion({ ...region, radius: Number(e.target.value) })} className="w-full" /></div>}
-      <div className="mb-3 flex flex-wrap gap-3 text-xs text-slate-500"><span>● Active alerts: {alertPoints.length}</span><span>● Reports: {reportPoints.length}</span><span>● Shelters: {shelterPoints.length}</span><span>● Infrastructure: {infrastructurePoints.length}</span>{route && <span>● Evacuation route ready</span>}</div>
+      <div className="mb-3 flex flex-wrap gap-3 text-xs text-slate-500"><span>● Active alerts: {alertPoints.length}</span><span>● Reports: {reportPoints.length}</span><span>● Shelters: {shelterPoints.length}</span><span>● Infrastructure: {infrastructurePoints.length}</span>{routePositions.length >= 2 && <span className="font-semibold text-blue-600">● Evacuation route displayed</span>}</div>
 
       <MapContainer center={center} zoom={10} style={{ height: "480px", width: "100%", borderRadius: "12px" }}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
