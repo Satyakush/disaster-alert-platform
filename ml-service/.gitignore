@@ -2,3 +2,5 @@ data/raw/*
 data/processed/*
 models/*
 !models/.gitkeep
+!data/raw/.gitkeep
+!data/processed/.gitkeep
