@@ -1,11 +1,12 @@
 from pathlib import Path
+import json
 import subprocess
 import sys
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = BASE_DIR / "scripts"
 RAW_DIR = BASE_DIR / "data" / "raw"
-STEPS = ["prepare_emdat.py", "validate_dataset.py", "train_model.py", "smoke_test.py"]
+STEPS = ["prepare_emdat.py", "validate_dataset.py", "train_model.py", "smoke_test.py", "check_ml_artifacts.py"]
 
 def run_step(filename):
     print(f"Running {filename}...")
@@ -22,12 +23,12 @@ def main():
     validation_path = BASE_DIR / "data" / "processed" / "dataset_validation.json"
     if not validation_path.exists():
         raise FileNotFoundError("Dataset validation report was not created.")
-    import json
     validation = json.loads(validation_path.read_text(encoding="utf-8"))
     if not validation.get("ready_for_training"):
         raise ValueError("Dataset validation failed. Review data/processed/dataset_validation.json before training.")
     run_step("train_model.py")
     run_step("smoke_test.py")
+    run_step("check_ml_artifacts.py")
     print("ML pipeline completed successfully.")
 
 if __name__ == "__main__":
