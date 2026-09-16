@@ -7,9 +7,8 @@ PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
 OUTPUT_COLUMNS = [
     "disaster_type",
-    "country",
-    "region",
-    "year",
+    "latitude",
+    "longitude",
     "month",
     "duration_days",
     "deaths",
@@ -21,6 +20,7 @@ OUTPUT_COLUMNS = [
 
 def find_input():
     candidates = list(RAW_DIR.glob("*.csv")) + list(RAW_DIR.glob("*.xlsx")) + list(RAW_DIR.glob("*.xls"))
+    candidates = [path for path in candidates if "usgs" not in path.name.lower()]
     if not candidates:
         raise FileNotFoundError("Place the permitted EM-DAT CSV/XLSX export in ml-service/data/raw before running this script.")
     return candidates[0]
@@ -40,8 +40,8 @@ def find_column(columns, aliases):
 
 def numeric(frame, column):
     if not column:
-        return pd.Series(0.0, index=frame.index)
-    return pd.to_numeric(frame[column], errors="coerce").fillna(0.0).clip(lower=0.0)
+        return pd.Series(float("nan"), index=frame.index)
+    return pd.to_numeric(frame[column], errors="coerce")
 
 
 def text(frame, column, default="unknown"):
@@ -51,9 +51,9 @@ def text(frame, column, default="unknown"):
 
 
 def severity_class(row):
-    deaths = row["deaths"]
-    affected = row["affected"]
-    damage = row["damage_usd"]
+    deaths = max(float(row["deaths"]), 0.0)
+    affected = max(float(row["affected"]), 0.0)
+    damage = max(float(row["damage_usd"]), 0.0)
     score = 0
     if deaths >= 1000:
         score += 3
@@ -90,9 +90,8 @@ def main():
         frame = pd.read_csv(input_path, low_memory=False)
 
     disaster_type_column = find_column(frame.columns, ["Disaster Type", "Disaster Subgroup"])
-    country_column = find_column(frame.columns, ["Country"])
-    region_column = find_column(frame.columns, ["Region"])
-    year_column = find_column(frame.columns, ["Start Year", "Year"])
+    latitude_column = find_column(frame.columns, ["Latitude", "Lat"])
+    longitude_column = find_column(frame.columns, ["Longitude", "Long", "Lon"])
     start_month_column = find_column(frame.columns, ["Start Month"])
     end_date_column = find_column(frame.columns, ["End Date"])
     start_date_column = find_column(frame.columns, ["Start Date"])
@@ -102,13 +101,12 @@ def main():
 
     prepared = pd.DataFrame(index=frame.index)
     prepared["disaster_type"] = text(frame, disaster_type_column).str.lower()
-    prepared["country"] = text(frame, country_column)
-    prepared["region"] = text(frame, region_column)
-    prepared["year"] = numeric(frame, year_column).astype(int)
-    prepared["month"] = numeric(frame, start_month_column).astype(int)
-    prepared["deaths"] = numeric(frame, deaths_column)
-    prepared["affected"] = numeric(frame, affected_column)
-    prepared["damage_usd"] = numeric(frame, damage_column) * 1000
+    prepared["latitude"] = numeric(frame, latitude_column)
+    prepared["longitude"] = numeric(frame, longitude_column)
+    prepared["month"] = numeric(frame, start_month_column)
+    prepared["deaths"] = numeric(frame, deaths_column).fillna(0).clip(lower=0)
+    prepared["affected"] = numeric(frame, affected_column).fillna(0).clip(lower=0)
+    prepared["damage_usd"] = numeric(frame, damage_column).fillna(0).clip(lower=0) * 1000
 
     if start_date_column and end_date_column:
         start = pd.to_datetime(frame[start_date_column], errors="coerce")
@@ -118,8 +116,8 @@ def main():
         prepared["duration_days"] = 0
 
     prepared["severity_class"] = prepared.apply(severity_class, axis=1)
-    prepared = prepared[OUTPUT_COLUMNS].dropna(subset=["disaster_type", "country"])
-    prepared = prepared[prepared["year"] > 0].reset_index(drop=True)
+    prepared = prepared[OUTPUT_COLUMNS].dropna(subset=["disaster_type"])
+    prepared = prepared[prepared["month"].between(1, 12) | prepared["month"].isna()].reset_index(drop=True)
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     output_path = PROCESSED_DIR / "disaster_training.csv"
