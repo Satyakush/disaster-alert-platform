@@ -5,7 +5,7 @@ from typing import Any, Dict
 import joblib
 import pandas as pd
 
-app = FastAPI(title="Disaster Risk Intelligence Service", version="2.1.0")
+app = FastAPI(title="Disaster Risk Intelligence Service", version="2.2.0")
 MODEL_PATH = Path(__file__).resolve().parent / "models" / "disaster_severity_model.joblib"
 model = joblib.load(MODEL_PATH) if MODEL_PATH.exists() else None
 
@@ -117,8 +117,8 @@ def trained_prediction(data: RiskRequest):
         "disaster_type": text(hazard, "type", "other").lower(),
         "latitude": coordinate(region, ["lat", "latitude"]),
         "longitude": coordinate(region, ["lng", "lon", "longitude"]),
+        "year": integer(region, "year", current_time.year),
         "month": integer(region, "month", current_time.month),
-        "duration_days": max(0, integer(region, "duration_days", 0)),
     }])
     prediction = str(model.predict(row)[0])
     probabilities = model.predict_proba(row)[0] if hasattr(model, "predict_proba") else []
