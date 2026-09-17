@@ -17,6 +17,8 @@ import EvacuationPanel from "../components/EvacuationPanel";
 const hazards = [["flood", "Flood"], ["cyclone", "Cyclone"], ["earthquake", "Earthquake"], ["wildfire", "Wildfire"], ["heatwave", "Heatwave"], ["storm", "Storm"], ["landslide", "Landslide"], ["tsunami", "Tsunami"], ["industrial", "Industrial"], ["other", "Other"]];
 const riskStyles = { low: "bg-emerald-50 text-emerald-700 border-emerald-200", medium: "bg-amber-50 text-amber-700 border-amber-200", high: "bg-orange-50 text-orange-700 border-orange-200", critical: "bg-red-50 text-red-700 border-red-200" };
 const severityDefaults = { low: { intensity: 25, probability: 25 }, medium: { intensity: 45, probability: 45 }, high: { intensity: 70, probability: 70 }, critical: { intensity: 90, probability: 90 } };
+const urgencyProbability = { immediate: 95, expected: 75, future: 55, past: 20 };
+const certaintyProbability = { observed: 95, likely: 75, possible: 50, unknown: 25 };
 
 function distanceKm(first, second) {
   const lat1 = Number(first?.lat);
@@ -31,6 +33,53 @@ function distanceKm(first, second) {
   return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function impactExposure(alert) {
+  const population = Number(alert?.impact?.population) || 0;
+  const households = Number(alert?.impact?.households) || 0;
+  const hospitals = Number(alert?.impact?.hospitals) || 0;
+  const schools = Number(alert?.impact?.schools) || 0;
+  const roadsKm = Number(alert?.impact?.roadsKm) || 0;
+  return Math.min(100, Math.round(population / 10000 + households / 2500 + hospitals * 4 + schools * 2 + roadsKm));
+}
+
+function impactVulnerability(alert) {
+  const hospitals = Number(alert?.impact?.hospitals) || 0;
+  const schools = Number(alert?.impact?.schools) || 0;
+  const roadsKm = Number(alert?.impact?.roadsKm) || 0;
+  const evacuationCenters = Number(alert?.impact?.evacuationCenters) || 0;
+  return Math.min(100, Math.round(hospitals * 8 + schools * 4 + roadsKm * 1.5 + Math.max(0, 20 - evacuationCenters * 2)));
+}
+
+function currentSignalFromAlert(alert) {
+  if (!alert) return null;
+  const severity = severityDefaults[alert.severity] || severityDefaults.medium;
+  const urgency = urgencyProbability[alert.urgency] ?? 50;
+  const certainty = certaintyProbability[alert.certainty] ?? 50;
+  return {
+    type: alert.disasterType || "other",
+    intensity: severity.intensity,
+    probability: Math.round((urgency + certainty) / 2),
+    exposure: impactExposure(alert),
+    vulnerability: impactVulnerability(alert),
+    source: "active-alert",
+    alertId: alert._id,
+  };
+}
+
+function currentSignalFromReport(report) {
+  if (!report) return null;
+  const severity = severityDefaults[report.priority] || severityDefaults.medium;
+  return {
+    type: report.disasterType || report.type || "other",
+    intensity: severity.intensity,
+    probability: severity.probability,
+    exposure: 0,
+    vulnerability: 0,
+    source: "verified-report",
+    reportId: report._id,
+  };
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -41,6 +90,7 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [selectedAlert, setSelectedAlert] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null);
   const [route, setRoute] = useState(null);
   const [riskResult, setRiskResult] = useState(null);
   const [riskLoading, setRiskLoading] = useState(false);
@@ -104,7 +154,6 @@ export default function Dashboard() {
     if (!selectedAlert?.coordinates?.coordinates || selectedAlert.coordinates.coordinates.length !== 2) return;
     const [lng, lat] = selectedAlert.coordinates.coordinates;
     setSelectedRegion({ lat, lng, radius: Number(selectedAlert.radius) || 3000 });
-    setRiskInputs((current) => ({ ...current, type: hazards.some(([value]) => value === selectedAlert.disasterType) ? selectedAlert.disasterType : current.type, intensity: severityDefaults[selectedAlert.severity]?.intensity || current.intensity, probability: severityDefaults[selectedAlert.severity]?.probability || current.probability }));
     setRiskResult(null);
     setRiskError("");
   }, [selectedAlert]);
@@ -118,25 +167,27 @@ export default function Dashboard() {
     const radiusKm = Number(region.radius || 3000) / 1000;
     const nearbyAlerts = alerts.filter((alert) => alert.coordinates?.coordinates?.length === 2 && ["active", "escalated"].includes(alert.status)).map((alert) => {
       const [lng, lat] = alert.coordinates.coordinates;
-      return { alert, distance: distanceKm(region, { lat, lng }) };
-    }).filter((item) => item.distance <= radiusKm).sort((a, b) => a.distance - b.distance);
+      const alertRadiusKm = Math.max(Number(alert.radius) || 1500, 500) / 1000;
+      const distance = distanceKm(region, { lat, lng });
+      return { alert, distance, alertRadiusKm, overlaps: distance <= radiusKm + alertRadiusKm };
+    }).filter((item) => item.overlaps).sort((a, b) => (a.distance - a.alertRadiusKm) - (b.distance - b.alertRadiusKm));
     const nearbyReports = reports.filter((report) => report.coordinates?.coordinates?.length === 2).map((report) => {
       const [lng, lat] = report.coordinates.coordinates;
       return { report, distance: distanceKm(region, { lat, lng }) };
-    }).filter((item) => item.distance <= radiusKm);
+    }).filter((item) => item.distance <= radiusKm).sort((a, b) => (severityDefaults[b.report.priority]?.intensity || 0) - (severityDefaults[a.report.priority]?.intensity || 0));
     const currentAlert = nearbyAlerts[0]?.alert || null;
-    const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
-    const currentReport = nearbyReports.sort((a, b) => (priorityOrder[b.report.priority] || 0) - (priorityOrder[a.report.priority] || 0))[0]?.report || null;
-    const currentSignal = currentAlert?.severity || currentReport?.priority;
+    const currentReport = nearbyReports[0]?.report || null;
+    const currentSignal = currentSignalFromAlert(currentAlert) || currentSignalFromReport(currentReport);
     setSelectedRegion(region);
     setSelectedAlert(currentAlert);
+    setSelectedReport(currentReport);
     setRoute(null);
     setRiskResult(null);
     setRiskError("");
-    if (currentSignal && severityDefaults[currentSignal]) {
-      setRiskInputs((current) => ({ ...current, type: currentAlert?.disasterType || current.type, intensity: severityDefaults[currentSignal].intensity, probability: severityDefaults[currentSignal].probability }));
-    } else if (!currentAlert) {
-      setRiskInputs((current) => ({ ...current, intensity: 0, probability: 0 }));
+    if (currentSignal) {
+      setRiskInputs((current) => ({ ...current, type: currentSignal.type, intensity: currentSignal.intensity, probability: currentSignal.probability, exposure: currentSignal.exposure, vulnerability: currentSignal.vulnerability }));
+    } else {
+      setRiskInputs((current) => ({ ...current, intensity: 0, probability: 0, exposure: 0, vulnerability: 0 }));
     }
   };
 
@@ -151,15 +202,21 @@ export default function Dashboard() {
     setRiskLoading(true);
     setRiskError("");
     try {
-      const region = { ...selectedRegion, exposure: riskInputs.exposure, vulnerability: riskInputs.vulnerability, historicalRisk: riskInputs.historicalRisk };
-      const result = await analyzeRisk(region, { type: riskInputs.type, intensity: riskInputs.intensity, probability: riskInputs.probability });
+      const region = {
+        ...selectedRegion,
+        exposure: riskInputs.exposure,
+        vulnerability: riskInputs.vulnerability,
+        historicalRisk: riskInputs.historicalRisk,
+        currentSignal: selectedAlert ? currentSignalFromAlert(selectedAlert) : selectedReport ? currentSignalFromReport(selectedReport) : null,
+      };
+      const result = await analyzeRisk(region, { type: riskInputs.type, intensity: riskInputs.intensity, probability: riskInputs.probability, currentSignal: region.currentSignal });
       setRiskResult(result);
       const factorValues = Object.fromEntries((result.factors || []).map((factor) => [factor.name, Number(factor.value) || 0]));
       setRiskInputs((current) => ({ ...current, intensity: factorValues.hazard_intensity ?? current.intensity, probability: factorValues.hazard_probability ?? current.probability, exposure: factorValues.exposure ?? current.exposure, vulnerability: factorValues.vulnerability ?? current.vulnerability, historicalRisk: factorValues.historical_risk ?? current.historicalRisk }));
     } catch (err) {
       console.error("Risk analysis failed:", err);
       setRiskResult(null);
-      setRiskError(err.response?.data?.message || "Risk analysis service unavailable");
+      setRiskError(err.response?.data?.message || err.message || "Risk analysis service unavailable");
     } finally {
       setRiskLoading(false);
     }
