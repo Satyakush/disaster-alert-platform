@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
-import { authVisual } from "../assets/authVisual";
 
 function UserIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>;
@@ -42,7 +41,7 @@ export default function Register() {
 
   return (
     <main className="auth-page">
-      <section className="auth-visual" style={{ backgroundImage: `url(${authVisual})` }} aria-label="Disaster Alert Platform">
+      <section className="auth-visual" style={{ backgroundImage: "url(/disaster.png)" }} aria-label="Disaster Alert Platform">
         <div className="auth-visual-overlay" />
       </section>
 
