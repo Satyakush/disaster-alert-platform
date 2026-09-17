@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { authVisual } from "../assets/authVisual";
 
 function UserIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>;
@@ -41,21 +42,8 @@ export default function Register() {
 
   return (
     <main className="auth-page">
-      <section className="auth-visual" aria-label="Disaster Alert Platform">
+      <section className="auth-visual" style={{ backgroundImage: `url(${authVisual})` }} aria-label="Disaster Alert Platform">
         <div className="auth-visual-overlay" />
-        <div className="auth-visual-content">
-          <div className="auth-brand-mark">✦</div>
-          <p className="auth-kicker">BE AWARE · BE PREPARED · BE SAFER</p>
-          <h1><span>DISASTER</span><strong>ALERT</strong><small>PLATFORM</small></h1>
-          <p className="auth-tagline">Real-time Alerts. Smarter Insights. Safer Communities.</p>
-          <div className="auth-features">
-            <span><b>◈</b> Early Warnings</span>
-            <span><b>▥</b> Risk Analysis</span>
-            <span><b>♧</b> Community Support</span>
-            <span><b>♢</b> Disaster Preparedness</span>
-          </div>
-          <p className="auth-script">Together<br />for a Safer Tomorrow</p>
-        </div>
       </section>
 
       <section className="auth-panel-wrap">
