@@ -1,5 +1,5 @@
 import { MapContainer, TileLayer, Marker, Circle, Popup, Polyline, Pane, useMap, useMapEvents } from "react-leaflet";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { searchPlace } from "../api/geocode";
 import L from "leaflet";
@@ -65,10 +65,15 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
   const [marker, setMarker] = useState(null);
   const [region, setRegion] = useState(null);
   const [error, setError] = useState("");
+  const onRegionSelectRef = useRef(onRegionSelect);
 
   useEffect(() => {
-    if (region && onRegionSelect) onRegionSelect(region);
-  }, [region, onRegionSelect]);
+    onRegionSelectRef.current = onRegionSelect;
+  }, [onRegionSelect]);
+
+  useEffect(() => {
+    if (region && onRegionSelectRef.current) onRegionSelectRef.current(region);
+  }, [region]);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
