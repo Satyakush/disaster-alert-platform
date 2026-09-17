@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
+import { authVisual } from "../assets/authVisual";
 
 function MailIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>;
@@ -43,21 +44,8 @@ export default function Login() {
 
   return (
     <main className="auth-page">
-      <section className="auth-visual" aria-label="Disaster Alert Platform">
+      <section className="auth-visual" style={{ backgroundImage: `url(${authVisual})` }} aria-label="Disaster Alert Platform">
         <div className="auth-visual-overlay" />
-        <div className="auth-visual-content">
-          <div className="auth-brand-mark">✦</div>
-          <p className="auth-kicker">BE AWARE · BE PREPARED · BE SAFER</p>
-          <h1><span>DISASTER</span><strong>ALERT</strong><small>PLATFORM</small></h1>
-          <p className="auth-tagline">Real-time Alerts. Smarter Insights. Safer Communities.</p>
-          <div className="auth-features">
-            <span><b>◈</b> Early Warnings</span>
-            <span><b>▥</b> Risk Analysis</span>
-            <span><b>♧</b> Community Support</span>
-            <span><b>♢</b> Disaster Preparedness</span>
-          </div>
-          <p className="auth-script">Together<br />for a Safer Tomorrow</p>
-        </div>
       </section>
 
       <section className="auth-panel-wrap">
