@@ -1,16 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios";
+
+function UserIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>;
+}
+
+function MailIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>;
+}
+
+function LockIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>;
+}
 
 export default function Register() {
   const navigate = useNavigate();
-
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
-
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -22,9 +28,8 @@ export default function Register() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
-      await axios.post("http://localhost:5000/api/auth/register", form);
+      await api.post("/auth/register", form);
       navigate("/login");
     } catch (err) {
       console.error(err);
@@ -35,57 +40,69 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
-      <div className="w-full max-w-md bg-white rounded-xl p-8">
-        <h1 className="text-2xl font-bold text-center mb-4">
-          Register
-        </h1>
+    <main className="auth-page">
+      <section className="auth-visual" aria-label="Disaster Alert Platform">
+        <div className="auth-visual-overlay" />
+        <div className="auth-visual-content">
+          <div className="auth-brand-mark">✦</div>
+          <p className="auth-kicker">BE AWARE · BE PREPARED · BE SAFER</p>
+          <h1><span>DISASTER</span><strong>ALERT</strong><small>PLATFORM</small></h1>
+          <p className="auth-tagline">Real-time Alerts. Smarter Insights. Safer Communities.</p>
+          <div className="auth-features">
+            <span><b>◈</b> Early Warnings</span>
+            <span><b>▥</b> Risk Analysis</span>
+            <span><b>♧</b> Community Support</span>
+            <span><b>♢</b> Disaster Preparedness</span>
+          </div>
+          <p className="auth-script">Together<br />for a Safer Tomorrow</p>
+        </div>
+      </section>
 
-        {error && (
-          <p className="text-red-600 text-sm mb-3 text-center">
-            {error}
-          </p>
-        )}
+      <section className="auth-panel-wrap">
+        <div className="auth-panel">
+          <div className="auth-tabs">
+            <button className="auth-tab" type="button" onClick={() => navigate("/login")}>Login</button>
+            <button className="auth-tab active" type="button">Register</button>
+          </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            name="name"
-            placeholder="Name"
-            value={form.name}
-            onChange={handleChange}
-            required
-            className="w-full border px-3 py-2 rounded"
-          />
+          <div className="auth-heading">
+            <p>JOIN THE PLATFORM</p>
+            <h2>Create your Disaster Alert Platform account</h2>
+          </div>
 
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            required
-            className="w-full border px-3 py-2 rounded"
-          />
+          {error && <div className="auth-error">{error}</div>}
 
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            className="w-full border px-3 py-2 rounded"
-          />
+          <form onSubmit={handleSubmit} className="auth-form">
+            <label className="auth-input-wrap">
+              <UserIcon />
+              <input name="name" placeholder="Full name" value={form.name} onChange={handleChange} required autoComplete="name" />
+            </label>
+            <label className="auth-input-wrap">
+              <MailIcon />
+              <input name="email" type="email" placeholder="Email address" value={form.email} onChange={handleChange} required autoComplete="email" />
+            </label>
+            <label className="auth-input-wrap">
+              <LockIcon />
+              <input name="password" type="password" placeholder="Create password" value={form.password} onChange={handleChange} required minLength={6} autoComplete="new-password" />
+            </label>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded"
-          >
-            {loading ? "Creating..." : "Register"}
-          </button>
-        </form>
-      </div>
-    </div>
+            <p className="auth-helper">Your account gives you access to real-time alerts, risk intelligence and community safety tools.</p>
+
+            <button type="submit" disabled={loading} className="auth-submit">
+              {loading ? "Creating..." : "Create Account"}<span>→</span>
+            </button>
+          </form>
+
+          <div className="auth-divider"><span>OR</span></div>
+
+          <div className="auth-socials">
+            <button type="button" disabled>G <span>Continue with Google</span></button>
+            <button type="button" disabled>◉ <span>Continue with GitHub</span></button>
+          </div>
+
+          <p className="auth-switch">Already have an account? <button type="button" onClick={() => navigate("/login")}>Sign in</button></p>
+        </div>
+      </section>
+    </main>
   );
 }
