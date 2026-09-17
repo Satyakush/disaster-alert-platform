@@ -6,7 +6,7 @@ import json
 import joblib
 import pandas as pd
 
-app = FastAPI(title="Disaster Risk Intelligence Service", version="2.5.0")
+app = FastAPI(title="Disaster Risk Intelligence Service", version="2.6.0")
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "models" / "disaster_severity_model.joblib"
 EVALUATION_PATH = BASE_DIR / "models" / "evaluation.json"
@@ -82,20 +82,22 @@ def baseline_prediction(data: RiskRequest):
     exposure = number(region, "exposure", number(region, "populationDensity"))
     vulnerability = number(region, "vulnerability", number(region, "terrainVulnerability"))
     historical = number(region, "historicalRisk", number(region, "historicalDisasters"))
-    components = [("hazard_intensity", hazard_intensity, 0.30), ("hazard_probability", hazard_probability, 0.20), ("exposure", exposure, 0.20), ("vulnerability", vulnerability, 0.20), ("historical_risk", historical, 0.10)]
-    score = round(sum(value * weight for _, value, weight in components), 2)
+    components = [("hazard_intensity", hazard_intensity, 0.30, "scenario-input"), ("hazard_probability", hazard_probability, 0.20, "scenario-input"), ("exposure", exposure, 0.20, "scenario-input"), ("vulnerability", vulnerability, 0.20, "scenario-input"), ("historical_risk", historical, 0.10, "scenario-input")]
+    score = round(sum(value * weight for _, value, weight, _ in components), 2)
     risk_level = level(score)
     supplied = sum(1 for value in [hazard.get("intensity"), hazard.get("probability"), region.get("exposure"), region.get("vulnerability"), region.get("historicalRisk")] if value is not None)
     confidence = round(0.55 + (supplied / 5) * 0.4, 2)
-    factors = [{"name": name, "value": round(value, 2), "weight": weight, "contribution": round(value * weight, 2), "source": "scenario-input"} for name, value, weight in components]
+    factors = [{"name": name, "value": round(value, 2), "weight": weight, "contribution": round(value * weight, 2), "source": source} for name, value, weight, source in components]
     return {"riskScore": score, "riskLevel": risk_level, "confidence": confidence, "factors": factors, "recommendedActions": action_for(risk_level, text(hazard, "type", "other").lower()), "method": "weighted-risk-model-v1"}
 
 def trained_prediction(data: RiskRequest):
     hazard = data.hazard
     region = data.region
+    current_signal = region.get("currentSignal") or hazard.get("currentSignal") or data.meta.get("currentSignal") or {}
     current_time = pd.Timestamp.utcnow()
+    signal_type = text(current_signal, "type", text(hazard, "type", "other")).lower()
     row = pd.DataFrame([{
-        "disaster_type": text(hazard, "type", "other").lower(),
+        "disaster_type": signal_type,
         "latitude": coordinate(region, ["lat", "latitude"]),
         "longitude": coordinate(region, ["lng", "lon", "longitude"]),
         "year": integer(region, "year", current_time.year),
@@ -108,15 +110,16 @@ def trained_prediction(data: RiskRequest):
     probability_map = {str(label): round(float(value), 4) for label, value in zip(classes, probabilities)}
     score_map = {"low": 20, "medium": 45, "high": 70, "critical": 90}
     historical_score = round(sum(float(probability_map.get(name, 0.0)) * score for name, score in score_map.items()), 2)
-    hazard_intensity = number(hazard, "intensity", number(region, "hazardIntensity"))
-    hazard_probability = number(hazard, "probability", number(region, "hazardProbability"))
-    exposure = number(region, "exposure", number(region, "populationDensity"))
-    vulnerability = number(region, "vulnerability", number(region, "terrainVulnerability"))
+    hazard_intensity = number(current_signal, "intensity", number(hazard, "intensity", number(region, "hazardIntensity")))
+    hazard_probability = number(current_signal, "probability", number(hazard, "probability", number(region, "hazardProbability")))
+    exposure = number(current_signal, "exposure", number(region, "exposure", number(region, "populationDensity")))
+    vulnerability = number(current_signal, "vulnerability", number(region, "vulnerability", number(region, "terrainVulnerability")))
+    current_source = text(current_signal, "source", "scenario-input")
     components = [
-        ("hazard_intensity", hazard_intensity, 0.20, "scenario-input"),
-        ("hazard_probability", hazard_probability, 0.15, "scenario-input"),
-        ("exposure", exposure, 0.10, "scenario-input"),
-        ("vulnerability", vulnerability, 0.10, "scenario-input"),
+        ("hazard_intensity", hazard_intensity, 0.20, current_source),
+        ("hazard_probability", hazard_probability, 0.15, current_source),
+        ("exposure", exposure, 0.10, current_source),
+        ("vulnerability", vulnerability, 0.10, current_source),
         ("historical_risk", historical_score, 0.45, "trained-model"),
     ]
     final_score = round(sum(value * weight for _, value, weight, _ in components), 2)
@@ -130,7 +133,8 @@ def trained_prediction(data: RiskRequest):
         "historicalPrediction": prediction,
         "historicalScore": historical_score,
         "factors": factors,
-        "recommendedActions": action_for(risk_level, text(hazard, "type", "other").lower()),
+        "currentSignal": {"type": signal_type, "source": current_source},
+        "recommendedActions": action_for(risk_level, signal_type),
         "method": "hybrid-ml-risk-engine",
     }
 
