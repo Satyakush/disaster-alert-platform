@@ -3,10 +3,13 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from typing import Any, Dict
 import json
+import math
+from datetime import datetime, timezone
 import joblib
 import pandas as pd
+import requests
 
-app = FastAPI(title="Disaster Risk Intelligence Service", version="2.6.0")
+app = FastAPI(title="Disaster Risk Intelligence Service", version="3.0.0")
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "models" / "disaster_severity_model.joblib"
 EVALUATION_PATH = BASE_DIR / "models" / "evaluation.json"
@@ -74,35 +77,79 @@ def action_for(level_name: str, hazard_type: str) -> list[str]:
         result.append("Keep away from unstable slopes and recently affected areas.")
     return result
 
-def baseline_prediction(data: RiskRequest):
-    hazard = data.hazard
+def resource_signal(region: Dict[str, Any]) -> tuple[float, float, Dict[str, Any]]:
+    reports = region.get("nearbyReports") or []
+    shelters = region.get("nearbyShelters") or []
+    infrastructure = region.get("nearbyInfrastructure") or []
+    report_count = len(reports) if isinstance(reports, list) else int(region.get("nearbyReportCount", 0) or 0)
+    shelter_capacity = 0.0
+    if isinstance(shelters, list):
+        shelter_capacity = sum(max(0.0, float(item.get("availableCapacity", 0) or 0)) for item in shelters if isinstance(item, dict))
+    infrastructure_count = len(infrastructure) if isinstance(infrastructure, list) else int(region.get("nearbyInfrastructureCount", 0) or 0)
+    vulnerable_infrastructure = 0
+    if isinstance(infrastructure, list):
+        vulnerable_infrastructure = sum(1 for item in infrastructure if isinstance(item, dict) and str(item.get("status", "")).lower() in {"damaged", "closed", "critical", "offline", "limited"})
+    report_signal = min(100.0, report_count * 20.0)
+    capacity_relief = min(30.0, shelter_capacity / 25.0)
+    exposure = min(100.0, report_signal + infrastructure_count * 2.0)
+    vulnerability = min(100.0, vulnerable_infrastructure * 12.0 + max(0.0, 20.0 - capacity_relief) + infrastructure_count * 1.5)
+    metadata = {"verifiedReports": report_count, "availableShelterCapacity": round(shelter_capacity, 1), "infrastructureAssets": infrastructure_count, "vulnerableInfrastructure": vulnerable_infrastructure}
+    return round(exposure, 2), round(vulnerability, 2), metadata
+
+def usgs_signal(latitude: float, longitude: float, radius_km: float) -> Dict[str, Any]:
+    try:
+        params = {"format": "geojson", "latitude": latitude, "longitude": longitude, "maxradiuskm": max(1.0, min(radius_km, 500.0)), "minmagnitude": 4.0, "limit": 20, "orderby": "time-asc"}
+        response = requests.get("https://earthquake.usgs.gov/fdsnws/event/1/query", params=params, timeout=3)
+        response.raise_for_status()
+        features = response.json().get("features", [])
+        if not features:
+            return {"available": True, "events": 0, "intensity": 0.0, "probability": 0.0, "source": "usgs-live"}
+        magnitudes = [float(item.get("properties", {}).get("mag")) for item in features if item.get("properties", {}).get("mag") is not None]
+        strongest = max(magnitudes) if magnitudes else 0.0
+        intensity = min(100.0, max(0.0, (strongest - 3.0) * 20.0))
+        probability = min(100.0, len(features) * 8.0 + intensity * 0.35)
+        return {"available": True, "events": len(features), "strongestMagnitude": strongest, "intensity": round(intensity, 2), "probability": round(probability, 2), "source": "usgs-live"}
+    except (requests.RequestException, ValueError, TypeError):
+        return {"available": False, "events": 0, "intensity": 0.0, "probability": 0.0, "source": "usgs-unavailable"}
+
+def enrich_current_signal(data: RiskRequest) -> tuple[Dict[str, Any], Dict[str, Any]]:
     region = data.region
-    hazard_intensity = number(hazard, "intensity", number(region, "hazardIntensity"))
-    hazard_probability = number(hazard, "probability", number(region, "hazardProbability"))
-    exposure = number(region, "exposure", number(region, "populationDensity"))
-    vulnerability = number(region, "vulnerability", number(region, "terrainVulnerability"))
-    historical = number(region, "historicalRisk", number(region, "historicalDisasters"))
-    components = [("hazard_intensity", hazard_intensity, 0.30, "scenario-input"), ("hazard_probability", hazard_probability, 0.20, "scenario-input"), ("exposure", exposure, 0.20, "scenario-input"), ("vulnerability", vulnerability, 0.20, "scenario-input"), ("historical_risk", historical, 0.10, "scenario-input")]
+    hazard = data.hazard
+    current = region.get("currentSignal") or hazard.get("currentSignal") or data.meta.get("currentSignal") or {}
+    signal_type = text(current, "type", text(hazard, "type", "other")).lower()
+    exposure, vulnerability, resource_meta = resource_signal(region)
+    if "exposure" in current:
+        exposure = max(exposure, number(current, "exposure"))
+    if "vulnerability" in current:
+        vulnerability = max(vulnerability, number(current, "vulnerability"))
+    live = {"source": "none"}
+    if signal_type == "earthquake":
+        lat = coordinate(region, ["lat", "latitude"])
+        lon = coordinate(region, ["lng", "lon", "longitude"])
+        radius_km = max(1.0, float(region.get("radius", 3000) or 3000) / 1000.0)
+        live = usgs_signal(lat, lon, radius_km)
+    intensity = number(current, "intensity", number(hazard, "intensity", number(region, "hazardIntensity")))
+    probability = number(current, "probability", number(hazard, "probability", number(region, "hazardProbability")))
+    if live.get("source") == "usgs-live":
+        intensity = max(intensity, float(live.get("intensity", 0)))
+        probability = max(probability, float(live.get("probability", 0)))
+    signal = {"type": signal_type, "intensity": round(intensity, 2), "probability": round(probability, 2), "exposure": round(exposure, 2), "vulnerability": round(vulnerability, 2), "source": text(current, "source", live.get("source", "scenario-input")), "live": live, "resources": resource_meta}
+    return signal, live
+
+def baseline_prediction(data: RiskRequest):
+    signal, live = enrich_current_signal(data)
+    historical = number(data.region, "historicalRisk", number(data.region, "historicalDisasters"))
+    components = [("hazard_intensity", signal["intensity"], 0.25, signal["source"]), ("hazard_probability", signal["probability"], 0.20, signal["source"]), ("exposure", signal["exposure"], 0.15, "current-intelligence"), ("vulnerability", signal["vulnerability"], 0.15, "current-intelligence"), ("historical_risk", historical, 0.25, "scenario-input")]
     score = round(sum(value * weight for _, value, weight, _ in components), 2)
     risk_level = level(score)
-    supplied = sum(1 for value in [hazard.get("intensity"), hazard.get("probability"), region.get("exposure"), region.get("vulnerability"), region.get("historicalRisk")] if value is not None)
-    confidence = round(0.55 + (supplied / 5) * 0.4, 2)
     factors = [{"name": name, "value": round(value, 2), "weight": weight, "contribution": round(value * weight, 2), "source": source} for name, value, weight, source in components]
-    return {"riskScore": score, "riskLevel": risk_level, "confidence": confidence, "factors": factors, "recommendedActions": action_for(risk_level, text(hazard, "type", "other").lower()), "method": "weighted-risk-model-v1"}
+    return {"riskScore": score, "riskLevel": risk_level, "confidence": 0.75, "probabilities": {}, "historicalPrediction": None, "historicalScore": historical, "factors": factors, "currentSignal": signal, "liveHazard": live, "recommendedActions": action_for(risk_level, signal["type"]), "method": "hybrid-fallback-risk-engine"}
 
 def trained_prediction(data: RiskRequest):
-    hazard = data.hazard
+    signal, live = enrich_current_signal(data)
     region = data.region
-    current_signal = region.get("currentSignal") or hazard.get("currentSignal") or data.meta.get("currentSignal") or {}
-    current_time = pd.Timestamp.utcnow()
-    signal_type = text(current_signal, "type", text(hazard, "type", "other")).lower()
-    row = pd.DataFrame([{
-        "disaster_type": signal_type,
-        "latitude": coordinate(region, ["lat", "latitude"]),
-        "longitude": coordinate(region, ["lng", "lon", "longitude"]),
-        "year": integer(region, "year", current_time.year),
-        "month": integer(region, "month", current_time.month),
-    }], columns=FEATURES)
+    current_time = datetime.now(timezone.utc)
+    row = pd.DataFrame([{"disaster_type": signal["type"], "latitude": coordinate(region, ["lat", "latitude"]), "longitude": coordinate(region, ["lng", "lon", "longitude"]), "year": integer(region, "year", current_time.year), "month": integer(region, "month", current_time.month)}], columns=FEATURES)
     prediction = str(model.predict(row)[0])
     probabilities = model.predict_proba(row)[0] if hasattr(model, "predict_proba") else []
     classes = model.classes_ if hasattr(model, "classes_") else []
@@ -110,37 +157,15 @@ def trained_prediction(data: RiskRequest):
     probability_map = {str(label): round(float(value), 4) for label, value in zip(classes, probabilities)}
     score_map = {"low": 20, "medium": 45, "high": 70, "critical": 90}
     historical_score = round(sum(float(probability_map.get(name, 0.0)) * score for name, score in score_map.items()), 2)
-    hazard_intensity = number(current_signal, "intensity", number(hazard, "intensity", number(region, "hazardIntensity")))
-    hazard_probability = number(current_signal, "probability", number(hazard, "probability", number(region, "hazardProbability")))
-    exposure = number(current_signal, "exposure", number(region, "exposure", number(region, "populationDensity")))
-    vulnerability = number(current_signal, "vulnerability", number(region, "vulnerability", number(region, "terrainVulnerability")))
-    current_source = text(current_signal, "source", "scenario-input")
-    components = [
-        ("hazard_intensity", hazard_intensity, 0.20, current_source),
-        ("hazard_probability", hazard_probability, 0.15, current_source),
-        ("exposure", exposure, 0.10, current_source),
-        ("vulnerability", vulnerability, 0.10, current_source),
-        ("historical_risk", historical_score, 0.45, "trained-model"),
-    ]
+    components = [("hazard_intensity", signal["intensity"], 0.20, signal["source"]), ("hazard_probability", signal["probability"], 0.15, signal["source"]), ("exposure", signal["exposure"], 0.10, "current-intelligence"), ("vulnerability", signal["vulnerability"], 0.10, "current-intelligence"), ("historical_risk", historical_score, 0.45, "trained-model")]
     final_score = round(sum(value * weight for _, value, weight, _ in components), 2)
     risk_level = level(final_score)
     factors = [{"name": name, "value": round(value, 2), "weight": weight, "contribution": round(value * weight, 2), "source": source} for name, value, weight, source in components]
-    return {
-        "riskScore": final_score,
-        "riskLevel": risk_level,
-        "confidence": round(confidence, 4),
-        "probabilities": probability_map,
-        "historicalPrediction": prediction,
-        "historicalScore": historical_score,
-        "factors": factors,
-        "currentSignal": {"type": signal_type, "source": current_source},
-        "recommendedActions": action_for(risk_level, signal_type),
-        "method": "hybrid-ml-risk-engine",
-    }
+    return {"riskScore": final_score, "riskLevel": risk_level, "confidence": round(confidence, 4), "probabilities": probability_map, "historicalPrediction": prediction, "historicalScore": historical_score, "factors": factors, "currentSignal": signal, "liveHazard": live, "recommendedActions": action_for(risk_level, signal["type"]), "method": "hybrid-ml-risk-engine"}
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "risk-intelligence", "modelLoaded": model is not None, "modelPath": str(MODEL_PATH), "features": FEATURES}
+    return {"status": "ok", "service": "risk-intelligence", "modelLoaded": model is not None, "modelPath": str(MODEL_PATH), "features": FEATURES, "liveSources": ["USGS earthquake feed"]}
 
 @app.get("/model-info")
 def model_info():
@@ -150,7 +175,7 @@ def model_info():
             evaluation = json.loads(EVALUATION_PATH.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             evaluation = {}
-    return {"modelLoaded": model is not None, "features": FEATURES, "target": "severity_class", "evaluation": evaluation}
+    return {"modelLoaded": model is not None, "features": FEATURES, "target": "severity_class", "evaluation": evaluation, "liveSources": ["USGS earthquake feed"], "engine": "hybrid-ml-risk-engine"}
 
 @app.post("/analyze-risk")
 def analyze_risk(data: RiskRequest):
