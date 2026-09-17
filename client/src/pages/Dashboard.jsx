@@ -152,8 +152,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!selectedAlert?.coordinates?.coordinates || selectedAlert.coordinates.coordinates.length !== 2) return;
-    const [lng, lat] = selectedAlert.coordinates.coordinates;
-    setSelectedRegion({ lat, lng, radius: Number(selectedAlert.radius) || 3000 });
     setRiskResult(null);
     setRiskError("");
   }, [selectedAlert]);
@@ -161,6 +159,7 @@ export default function Dashboard() {
   useEffect(() => {
     setRiskResult(null);
     setRiskError("");
+    setRiskInputs((current) => ({ ...current, historicalRisk: 0 }));
   }, [selectedRegion]);
 
   const handleRegionSelect = (region) => {
@@ -202,14 +201,9 @@ export default function Dashboard() {
     setRiskLoading(true);
     setRiskError("");
     try {
-      const region = {
-        ...selectedRegion,
-        exposure: riskInputs.exposure,
-        vulnerability: riskInputs.vulnerability,
-        historicalRisk: riskInputs.historicalRisk,
-        currentSignal: selectedAlert ? currentSignalFromAlert(selectedAlert) : selectedReport ? currentSignalFromReport(selectedReport) : null,
-      };
-      const result = await analyzeRisk(region, { type: riskInputs.type, intensity: riskInputs.intensity, probability: riskInputs.probability, currentSignal: region.currentSignal });
+      const currentSignal = selectedAlert ? currentSignalFromAlert(selectedAlert) : selectedReport ? currentSignalFromReport(selectedReport) : null;
+      const region = { ...selectedRegion, exposure: riskInputs.exposure, vulnerability: riskInputs.vulnerability, historicalRisk: riskInputs.historicalRisk, currentSignal };
+      const result = await analyzeRisk(region, { type: riskInputs.type, intensity: riskInputs.intensity, probability: riskInputs.probability, currentSignal });
       setRiskResult(result);
       const factorValues = Object.fromEntries((result.factors || []).map((factor) => [factor.name, Number(factor.value) || 0]));
       setRiskInputs((current) => ({ ...current, intensity: factorValues.hazard_intensity ?? current.intensity, probability: factorValues.hazard_probability ?? current.probability, exposure: factorValues.exposure ?? current.exposure, vulnerability: factorValues.vulnerability ?? current.vulnerability, historicalRisk: factorValues.historical_risk ?? current.historicalRisk }));
