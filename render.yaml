@@ -7,7 +7,7 @@ services:
     rootDir: server
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /health
+    healthCheckPath: /api/health
     autoDeploy: true
     envVars:
       - key: NODE_ENV
