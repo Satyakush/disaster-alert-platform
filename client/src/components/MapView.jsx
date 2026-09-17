@@ -30,6 +30,30 @@ function MapCenter({ center }) {
   return null;
 }
 
+function MapResizeHandler() {
+  const map = useMap();
+
+  useEffect(() => {
+    const refresh = () => {
+      requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+    };
+
+    refresh();
+    window.addEventListener("resize", refresh);
+
+    const container = map.getContainer();
+    const observer = new ResizeObserver(refresh);
+    observer.observe(container);
+
+    return () => {
+      window.removeEventListener("resize", refresh);
+      observer.disconnect();
+    };
+  }, [map]);
+
+  return null;
+}
+
 function RouteView({ positions }) {
   const map = useMap();
 
@@ -108,14 +132,15 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-3 flex flex-col gap-2 sm:flex-row">
         <input value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} placeholder="Search city / area" className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400" />
-        <button onClick={handleSearch} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Search</button>
+        <button type="button" onClick={handleSearch} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Search</button>
       </div>
       {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
       {region && <div className="mb-3 text-sm text-slate-600"><div className="flex justify-between"><span>Selected risk radius</span><span className="font-semibold">{region.radius / 1000} km</span></div><input type="range" min="1000" max="20000" step="500" value={region.radius} onChange={(e) => setRegion({ ...region, radius: Number(e.target.value) })} className="w-full" /></div>}
       <div className="mb-3 flex flex-wrap gap-3 text-xs text-slate-500"><span>● Active alerts: {alertPoints.length}</span><span>● Reports: {reportPoints.length}</span><span>● Shelters: {shelterPoints.length}</span><span>● Infrastructure: {infrastructurePoints.length}</span>{routePositions.length >= 2 && <span className="font-semibold text-blue-600">● Evacuation route displayed</span>}</div>
 
-      <MapContainer center={center} zoom={10} style={{ height: "480px", width: "100%", borderRadius: "12px" }}>
+      <MapContainer center={center} zoom={10} style={{ height: "480px", width: "100%", borderRadius: "12px", overflow: "hidden" }}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+        <MapResizeHandler />
         <MapCenter center={center} />
         <ClickHandler setRegion={setRegion} setMarker={setMarker} />
         {marker && <Marker position={marker}><Popup>Selected location</Popup></Marker>}
