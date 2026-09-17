@@ -23,7 +23,7 @@ export const analyzeRisk = async (req, res) => {
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       try {
         const mlResponse = await axios.post(endpoint, payload, {
-          timeout: 15000,
+          timeout: 70000,
         });
 
         return res.status(200).json(mlResponse.data);
