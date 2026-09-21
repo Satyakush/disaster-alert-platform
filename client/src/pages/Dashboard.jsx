@@ -195,7 +195,7 @@ export default function Dashboard() {
   const riskScore = Number(riskResult?.riskScore || 0);
 
   return (
-    <div className="admin-modern min-h-screen bg-slate-50">
+    <div className="platform-polished admin-modern min-h-screen bg-slate-50">
       <Navbar />
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
         <section className="rounded-2xl bg-slate-950 p-6 text-white shadow-lg"><div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">Early warning center</p><h1 className="mt-2 text-3xl font-bold tracking-tight">Disaster Intelligence Dashboard</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Detect hazards, assess AI-assisted risk, coordinate response, and monitor the live situation.</p></div><div className="flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300"><span className="h-2 w-2 rounded-full bg-emerald-400" />Live monitoring</span><span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold capitalize text-slate-300">{user?.role || "user"} view</span></div></div></section>
