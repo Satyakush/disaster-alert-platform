@@ -162,4 +162,61 @@
     position: relative;
     overflow: hidden;
   }
+  .admin-modern .admin-risk-panel {
+    background:
+      radial-gradient(circle at 100% 0%, rgb(34 211 238 / 0.08), transparent 16rem),
+      #ffffff;
+    border-color: rgb(203 213 225 / 0.9);
+  }
+  .admin-modern .admin-risk-panel button:not(:disabled) {
+    box-shadow: 0 8px 20px rgb(15 23 42 / 0.09);
+  }
+  .admin-modern .admin-review-card,
+  .admin-modern .admin-resource-card,
+  .admin-modern .admin-task-card {
+    position: relative;
+    overflow: hidden;
+    transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  }
+  .admin-modern .admin-review-card::before,
+  .admin-modern .admin-resource-card::before,
+  .admin-modern .admin-task-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(to bottom, #22d3ee, transparent);
+    opacity: .7;
+  }
+  .admin-modern .admin-review-card:hover,
+  .admin-modern .admin-resource-card:hover,
+  .admin-modern .admin-task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 36px rgb(15 23 42 / 0.10);
+  }
+  .admin-modern [class*="rounded-xl"][class*="bg-white"],
+  .admin-modern [class*="rounded-2xl"][class*="bg-white"] {
+    backdrop-filter: blur(10px);
+  }
+  .admin-modern .admin-kpi {
+    background:
+      linear-gradient(145deg, rgb(255 255 255 / 0.98), rgb(248 250 252 / 0.92));
+    border-color: rgb(226 232 240 / 0.9);
+  }
+  .admin-modern .admin-kpi strong,
+  .admin-modern .admin-kpi p[class*="text-3xl"] {
+    letter-spacing: -0.035em;
+  }
+  @media (max-width: 640px) {
+    .admin-modern main > section:first-of-type {
+      border-radius: 1rem;
+    }
+    .admin-modern main > section:first-of-type::after {
+      width: 10rem;
+      height: 10rem;
+    }
+  }
+
 }
