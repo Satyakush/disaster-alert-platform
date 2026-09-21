@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bell, Check, FileCheck2, ShieldAlert } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { connectToAlerts, disconnectFromAlerts, socket } from "../api/socket";
 
 const severityClass = {
@@ -12,6 +13,7 @@ const severityClass = {
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     connectToAlerts();
@@ -77,6 +79,7 @@ export default function NotificationCenter() {
         message: `${report.title} was submitted for admin verification.`,
         severity: report.priority || "medium",
         kind: "report",
+        action: "review-report",
         time: new Date(),
       });
     };
@@ -93,6 +96,7 @@ export default function NotificationCenter() {
           : `${report.title} was rejected by an administrator.${report.verificationNote ? ` Note: ${report.verificationNote}` : ""}`,
         severity: accepted ? "low" : "medium",
         kind: "report",
+        action: "my-report",
         time: new Date(),
       });
     };
@@ -106,6 +110,7 @@ export default function NotificationCenter() {
         message: `${report.title} was converted into an active disaster alert.`,
         severity: report.linkedAlert?.severity || report.priority || "medium",
         kind: "report",
+        action: "my-report",
         time: new Date(),
       });
     };
@@ -129,6 +134,19 @@ export default function NotificationCenter() {
       disconnectFromAlerts();
     };
   }, []);
+
+  const openNotification = (notification) => {
+    setOpen(false);
+
+    if (notification.kind === "report" && notification.action === "review-report") {
+      navigate(`/reports?reportId=${encodeURIComponent(notification.entityId)}`);
+      return;
+    }
+
+    if (notification.kind === "report" && notification.action === "my-report") {
+      navigate(`/my-reports?reportId=${encodeURIComponent(notification.entityId)}`);
+    }
+  };
 
   const enableBrowserAlerts = async () => {
     if (typeof Notification === "undefined") return;
@@ -156,7 +174,7 @@ export default function NotificationCenter() {
               <p className="mt-2 text-sm text-slate-600">No new notifications</p>
             </div>
           ) : notifications.map((notification) => (
-            <div key={notification.id} className="border-b border-slate-100 px-4 py-3">
+            <button key={notification.id} type="button" onClick={() => openNotification(notification)} className="block w-full border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50">
               <div className="flex gap-3">
                 {notification.kind === "report" ? (
                   <span className="mt-0.5 rounded-full bg-cyan-50 p-1.5 text-cyan-700"><FileCheck2 size={14} /></span>
@@ -169,7 +187,7 @@ export default function NotificationCenter() {
                   <p className="mt-1 text-[10px] text-slate-400">{notification.time.toLocaleTimeString()}</p>
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
         {typeof Notification !== "undefined" && Notification.permission !== "granted" && <button type="button" onClick={enableBrowserAlerts} className="flex w-full items-center justify-center gap-2 border-t border-slate-200 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"><Check size={14} />Enable browser emergency alerts</button>}
