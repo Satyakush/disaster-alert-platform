@@ -53,7 +53,7 @@ export default function ResponseTeam() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="admin-modern min-h-screen bg-slate-50">
       <Navbar />
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6">
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
