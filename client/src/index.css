@@ -78,3 +78,88 @@
   .auth-input-wrap input { height: 54px; }
   .auth-socials { grid-template-columns: 1fr; }
 }
+
+
+@layer components {
+  .admin-modern {
+    background:
+      radial-gradient(circle at 8% 0%, rgb(34 211 238 / 0.07), transparent 26rem),
+      radial-gradient(circle at 92% 8%, rgb(59 130 246 / 0.06), transparent 28rem),
+      #f8fafc;
+  }
+  .admin-modern main {
+    position: relative;
+  }
+  .admin-modern main > section:first-of-type {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgb(51 65 85 / 0.75);
+    border-radius: 1.35rem;
+    box-shadow: 0 24px 55px rgb(15 23 42 / 0.13), inset 0 1px rgb(255 255 255 / 0.05);
+  }
+  .admin-modern main > section:first-of-type::after {
+    content: "";
+    position: absolute;
+    width: 18rem;
+    height: 18rem;
+    right: -7rem;
+    top: -9rem;
+    border-radius: 999px;
+    background: rgb(34 211 238 / 0.12);
+    filter: blur(12px);
+    pointer-events: none;
+  }
+  .admin-modern main > div > div,
+  .admin-modern main > section:not(:first-of-type),
+  .admin-modern .admin-modern-panel {
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  }
+  .admin-modern main > div > div:hover,
+  .admin-modern main > section:not(:first-of-type):hover,
+  .admin-modern .admin-modern-panel:hover {
+    border-color: rgb(148 163 184 / 0.8);
+    box-shadow: 0 14px 34px rgb(15 23 42 / 0.08);
+  }
+  .admin-modern main > div > div[class*="bg-white"],
+  .admin-modern section[class*="bg-white"] {
+    border-radius: 1.1rem;
+    box-shadow: 0 5px 18px rgb(15 23 42 / 0.045);
+  }
+  .admin-modern input:not([type="range"]),
+  .admin-modern select,
+  .admin-modern textarea {
+    border-radius: 0.75rem;
+    transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+  }
+  .admin-modern input:not([type="range"]):focus,
+  .admin-modern select:focus,
+  .admin-modern textarea:focus {
+    border-color: #22d3ee !important;
+    box-shadow: 0 0 0 3px rgb(34 211 238 / 0.11);
+  }
+  .admin-modern button {
+    transition: transform 150ms ease, box-shadow 150ms ease, background-color 150ms ease, border-color 150ms ease;
+  }
+  .admin-modern button:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+  .admin-modern main > div[class*="grid"] > div {
+    position: relative;
+    overflow: hidden;
+  }
+  .admin-modern main > div[class*="grid"] > div::after {
+    content: "";
+    position: absolute;
+    width: 5rem;
+    height: 5rem;
+    right: -2.5rem;
+    top: -2.5rem;
+    border-radius: 999px;
+    background: rgb(34 211 238 / 0.055);
+    pointer-events: none;
+  }
+  .admin-modern .admin-kpi {
+    position: relative;
+    overflow: hidden;
+  }
+}
