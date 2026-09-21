@@ -5,6 +5,11 @@ export const fetchReports = async (params = {}) => {
   return res.data;
 };
 
+export const fetchMyReports = async () => {
+  const res = await api.get("/reports/mine");
+  return res.data;
+};
+
 export const createReport = async (data) => {
   const res = await api.post("/reports", data);
   return res.data;
