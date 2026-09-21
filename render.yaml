@@ -24,7 +24,7 @@ services:
         fromService:
           name: disaster-ml
           type: web
-          envVarKey: RENDER_EXTERNAL_URL
+          property: hostport
 
   - type: web
     name: disaster-ml
