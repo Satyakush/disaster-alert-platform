@@ -70,7 +70,7 @@ export default function ReportIncident() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="platform-polished min-h-screen bg-slate-950 text-white">
       <Navbar />
       <main className="mx-auto max-w-6xl px-6 py-8">
         <div className="mb-8">
