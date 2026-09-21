@@ -154,7 +154,7 @@ export default function NotificationCenter() {
   };
 
   return (
-    <div className="relative">
+    <div className="platform-notifications relative">
       <button type="button" onClick={() => setOpen((current) => !current)} className="relative rounded-lg p-2 text-slate-300 transition hover:bg-slate-800 hover:text-white" aria-label="Notifications">
         <Bell size={18} />
         {notifications.length > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-red-500 px-1 text-center text-[10px] font-bold leading-4 text-white">{notifications.length > 9 ? "9+" : notifications.length}</span>}
