@@ -13,6 +13,16 @@ const emitAlertEvent = (req, event, payload) => {
   if (io) io.to("alerts").emit(event, payload);
 };
 
+const emitUserReportEvent = (req, userId, event, payload) => {
+  const io = req.app.get("io");
+  if (io && userId) io.to(`user:${userId}`).emit(event, payload);
+};
+
+const emitAdminReportEvent = (req, event, payload) => {
+  const io = req.app.get("io");
+  if (io) io.to("admins").emit(event, payload);
+};
+
 export const createIncidentReport = async (req, res) => {
   try {
     const {
@@ -43,6 +53,16 @@ export const createIncidentReport = async (req, res) => {
     });
 
     await report.populate("createdBy", "name email role");
+
+    emitAdminReportEvent(req, "incident:created", {
+      _id: report._id,
+      title: report.title,
+      disasterType: report.disasterType,
+      priority: report.priority,
+      status: report.status,
+      createdAt: report.createdAt,
+      createdBy: report.createdBy,
+    });
 
     return res.status(201).json({
       message: "Incident report submitted successfully",
@@ -79,6 +99,20 @@ export const getIncidentReports = async (req, res) => {
   }
 };
 
+export const getMyIncidentReports = async (req, res) => {
+  try {
+    const reports = await IncidentReport.find({ createdBy: req.user.id })
+      .sort({ createdAt: -1 })
+      .populate("verifiedBy", "name email role")
+      .populate("linkedAlert", "title severity status");
+
+    return res.status(200).json({ count: reports.length, reports });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Failed to fetch your incident reports" });
+  }
+};
+
 export const updateIncidentReportStatus = async (req, res) => {
   try {
     const { status, verificationNote } = req.body;
@@ -111,6 +145,18 @@ export const updateIncidentReportStatus = async (req, res) => {
 
     if (!report) {
       return res.status(404).json({ message: "Incident report not found" });
+    }
+
+    if (status === "verified" || status === "rejected") {
+      emitUserReportEvent(req, report.createdBy?._id, "incident:status-updated", {
+        _id: report._id,
+        title: report.title,
+        status: report.status,
+        priority: report.priority,
+        verificationNote: report.verificationNote || "",
+        verifiedAt: report.verifiedAt,
+        verifiedBy: report.verifiedBy,
+      });
     }
 
     return res.status(200).json({
@@ -163,9 +209,19 @@ export const convertIncidentReportToAlert = async (req, res) => {
     await report.save();
 
     await alert.populate("createdBy", "name email role");
+    await report.populate("createdBy", "name email role");
+    await report.populate("verifiedBy", "name email role");
     await report.populate("linkedAlert", "title severity status");
 
     emitAlertEvent(req, "alert:created", alert);
+
+    emitUserReportEvent(req, report.createdBy?._id, "incident:converted", {
+      _id: report._id,
+      title: report.title,
+      status: report.status,
+      priority: report.priority,
+      linkedAlert: report.linkedAlert,
+    });
 
     return res.status(201).json({
       message: "Verified incident converted to alert successfully",
