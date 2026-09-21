@@ -13,7 +13,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="border-b border-slate-800 bg-slate-950 text-white shadow-lg">
+    <nav className="platform-navbar border-b border-slate-800 bg-slate-950 text-white shadow-lg">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
         <button onClick={() => navigate(user?.role === "responder" ? "/responder" : "/dashboard")} className="flex items-center gap-3 text-left"><div className="rounded-xl bg-cyan-500 p-2 text-slate-950"><FileWarning size={20} /></div><div><h1 className="text-base font-bold tracking-wide">Disaster Intelligence</h1><p className="text-xs text-slate-500">Early Warning Platform</p></div></button>
         <div className="flex items-center gap-2 sm:gap-3">
