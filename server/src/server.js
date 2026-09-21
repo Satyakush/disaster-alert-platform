@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import http from "http";
+import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 import app from "./app.js";
 import connectDB from "./config/db.js";
@@ -21,9 +22,32 @@ const clientOrigins = (process.env.CLIENT_URL || "http://localhost:5173").split(
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, { cors: { origin: clientOrigins, credentials: true } });
 
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token;
+
+    if (!token) {
+      return next(new Error("Authentication required"));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.user = decoded;
+    next();
+  } catch (error) {
+    next(new Error("Invalid or expired token"));
+  }
+});
+
 app.set("io", io);
 
 io.on("connection", (socket) => {
+  socket.join("alerts");
+  socket.join(`user:${socket.user.id}`);
+
+  if (socket.user.role === "admin") {
+    socket.join("admins");
+  }
+
   socket.emit("connection:ready", { connected: true, timestamp: new Date().toISOString() });
   socket.on("alerts:join", () => socket.join("alerts"));
   socket.on("alerts:leave", () => socket.leave("alerts"));
