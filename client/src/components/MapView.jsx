@@ -126,7 +126,7 @@ export default function MapView({ onRegionSelect, alerts = [], reports = [], she
   }).length;
 
   return (
-    <div className="h-full min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="platform-map h-full min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600">Live geospatial intelligence</p>
