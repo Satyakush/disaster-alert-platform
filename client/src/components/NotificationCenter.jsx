@@ -1,15 +1,8 @@
 import { useEffect, useState } from "react";
 import { Bell, Check, FileCheck2, ShieldAlert } from "lucide-react";
-import { socket } from "../api/socket";
+import { connectToAlerts, disconnectFromAlerts, socket } from "../api/socket";
 
 const severityClass = {
-  low: "bg-emerald-50 text-emerald-700",
-  medium: "bg-amber-50 text-amber-700",
-  high: "bg-orange-50 text-orange-700",
-  critical: "bg-red-50 text-red-700",
-};
-
-const priorityClass = {
   low: "bg-emerald-50 text-emerald-700",
   medium: "bg-amber-50 text-amber-700",
   high: "bg-orange-50 text-orange-700",
@@ -21,6 +14,8 @@ export default function NotificationCenter() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    connectToAlerts();
+
     const addNotification = (notification) => {
       setNotifications((current) => [notification, ...current].slice(0, 20));
 
@@ -29,23 +24,52 @@ export default function NotificationCenter() {
       }
     };
 
-    const handleAlert = (alert, event) => {
-      if (!alert?._id || (event === "alert:created" && alert.status === "draft")) return;
-
+    const handleAlertCreated = (alert) => {
+      if (!alert?._id || alert.status === "draft") return;
       addNotification({
-        id: `${event}-${alert._id}-${Date.now()}`,
+        id: `alert-created-${alert._id}-${Date.now()}`,
         entityId: String(alert._id),
         title: alert.title || "Disaster alert update",
-        message: event === "alert:created" ? "A new disaster alert has been published." : `Alert status changed to ${alert.status}.`,
+        message: "A new disaster alert has been published.",
         severity: alert.severity || "medium",
         kind: "alert",
         time: new Date(),
       });
     };
 
+    const handleAlertStatusChanged = (alert) => {
+      if (!alert?._id) return;
+      addNotification({
+        id: `alert-status-${alert._id}-${Date.now()}`,
+        entityId: String(alert._id),
+        title: alert.title || "Disaster alert update",
+        message: `Alert status changed to ${alert.status}.`,
+        severity: alert.severity || "medium",
+        kind: "alert",
+        time: new Date(),
+      });
+    };
+
+    const handleAlertUpdated = (alert) => {
+      if (!alert?._id) return;
+      addNotification({
+        id: `alert-updated-${alert._id}-${Date.now()}`,
+        entityId: String(alert._id),
+        title: alert.title || "Disaster alert update",
+        message: "A disaster alert has been updated.",
+        severity: alert.severity || "medium",
+        kind: "alert",
+        time: new Date(),
+      });
+    };
+
+    const handleAlertDeleted = ({ id }) => {
+      if (!id) return;
+      setNotifications((current) => current.filter((notification) => notification.entityId !== String(id)));
+    };
+
     const handleIncidentCreated = (report) => {
       if (!report?._id) return;
-
       addNotification({
         id: `incident-created-${report._id}-${Date.now()}`,
         entityId: String(report._id),
@@ -59,7 +83,6 @@ export default function NotificationCenter() {
 
     const handleIncidentStatus = (report) => {
       if (!report?._id) return;
-
       const accepted = report.status === "verified";
       addNotification({
         id: `incident-status-${report._id}-${Date.now()}`,
@@ -76,7 +99,6 @@ export default function NotificationCenter() {
 
     const handleIncidentConverted = (report) => {
       if (!report?._id) return;
-
       addNotification({
         id: `incident-converted-${report._id}-${Date.now()}`,
         entityId: String(report._id),
@@ -88,27 +110,23 @@ export default function NotificationCenter() {
       });
     };
 
-    const handleDeleted = ({ id }) => {
-      if (!id) return;
-      setNotifications((current) => current.filter((notification) => notification.entityId !== String(id)));
-    };
-
-    socket.on("alert:created", (alert) => handleAlert(alert, "alert:created"));
-    socket.on("alert:status-changed", (alert) => handleAlert(alert, "alert:status-changed"));
-    socket.on("alert:updated", (alert) => handleAlert(alert, "alert:updated"));
-    socket.on("alert:deleted", handleDeleted);
+    socket.on("alert:created", handleAlertCreated);
+    socket.on("alert:status-changed", handleAlertStatusChanged);
+    socket.on("alert:updated", handleAlertUpdated);
+    socket.on("alert:deleted", handleAlertDeleted);
     socket.on("incident:created", handleIncidentCreated);
     socket.on("incident:status-updated", handleIncidentStatus);
     socket.on("incident:converted", handleIncidentConverted);
 
     return () => {
-      socket.off("alert:created");
-      socket.off("alert:status-changed");
-      socket.off("alert:updated");
-      socket.off("alert:deleted", handleDeleted);
+      socket.off("alert:created", handleAlertCreated);
+      socket.off("alert:status-changed", handleAlertStatusChanged);
+      socket.off("alert:updated", handleAlertUpdated);
+      socket.off("alert:deleted", handleAlertDeleted);
       socket.off("incident:created", handleIncidentCreated);
       socket.off("incident:status-updated", handleIncidentStatus);
       socket.off("incident:converted", handleIncidentConverted);
+      disconnectFromAlerts();
     };
   }, []);
 
