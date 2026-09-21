@@ -38,7 +38,7 @@ export default function Analytics() {
   const maxDisaster = useMemo(() => Math.max(...(data?.byDisasterType || []).map((item) => item.count), 1), [data]);
 
   return (
-    <div className="admin-modern min-h-screen bg-slate-50">
+    <div className="platform-polished admin-modern min-h-screen bg-slate-50">
       <Navbar />
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <section className="rounded-2xl bg-slate-950 p-6 text-white shadow-lg">
