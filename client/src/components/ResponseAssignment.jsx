@@ -46,7 +46,7 @@ export default function ResponseAssignment({ alert }) {
   };
 
   return (
-    <div className="mt-4 border-t border-slate-100 pt-4">
+    <div className="platform-assignment mt-4 border-t border-slate-100 pt-4">
       <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
         <UserRoundPlus size={16} /> Assign responder
       </div>
