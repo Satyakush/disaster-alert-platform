@@ -101,7 +101,7 @@ export default function ReportReview() {
         ) : (
           <div className="grid gap-5 lg:grid-cols-2">
             {reports.map((report) => (
-              <article key={report._id} ref={(element) => { reportRefs.current[report._id] = element; }} className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl transition">
+              <article key={report._id} ref={(element) => { reportRefs.current[report._id] = element; }} className="admin-review-card rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl transition">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
