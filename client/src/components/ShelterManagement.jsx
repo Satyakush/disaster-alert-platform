@@ -111,7 +111,7 @@ export default function ShelterManagement({ shelters = [], selectedRegion, onCha
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="admin-modern-panel rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-cyan-600">Evacuation operations</p>
