@@ -220,3 +220,36 @@
   }
 
 }
+
+
+.ui-command-card,
+.ui-alert-card,
+.ui-shelter-option {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+.ui-command-card:hover,
+.ui-alert-card:hover,
+.ui-shelter-option:hover {
+  box-shadow: 0 16px 38px rgb(15 23 42 / 0.08);
+}
+.ui-intelligence-panel {
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.65);
+}
+.ui-section-panel {
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.7);
+}
+.ui-primary-action {
+  box-shadow: 0 10px 24px rgb(15 23 42 / 0.16);
+}
+main .rounded-xl.border,
+main .rounded-2xl.border {
+  border-color: rgb(226 232 240 / 0.9);
+}
+main input:not([type="range"]),
+main select,
+main textarea {
+  min-height: 42px;
+}
+main button {
+  -webkit-tap-highlight-color: transparent;
+}
