@@ -77,7 +77,7 @@ export default function ReportReview() {
   };
 
   return (
-    <div className="admin-modern min-h-screen bg-slate-950 text-white">
+    <div className="platform-polished admin-modern min-h-screen bg-slate-950 text-white">
       <Navbar />
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <section className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
