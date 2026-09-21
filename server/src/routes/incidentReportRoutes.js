@@ -2,6 +2,7 @@ import express from "express";
 import {
   createIncidentReport,
   getIncidentReports,
+  getMyIncidentReports,
   updateIncidentReportStatus,
   convertIncidentReportToAlert,
 } from "../controllers/incidentReportController.js";
@@ -11,6 +12,7 @@ import adminMiddleware from "../middlewares/adminMiddleware.js";
 const router = express.Router();
 
 router.get("/", getIncidentReports);
+router.get("/mine", authMiddleware, getMyIncidentReports);
 router.post("/", authMiddleware, createIncidentReport);
 router.patch(
   "/:id/status",
