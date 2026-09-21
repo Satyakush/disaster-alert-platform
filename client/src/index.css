@@ -253,3 +253,33 @@ main textarea {
 main button {
   -webkit-tap-highlight-color: transparent;
 }
+
+@layer components {
+  .platform-polished { position: relative; isolation: isolate; }
+  .platform-polished main { position: relative; }
+  .platform-polished main > section,
+  .platform-polished main > form,
+  .platform-polished main > article,
+  .platform-polished main > div > section,
+  .platform-polished main > div > article { transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+  .platform-polished main input:not([type="range"]),
+  .platform-polished main select,
+  .platform-polished main textarea { border-radius: .8rem; transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+  .platform-polished main input:not([type="range"]):focus,
+  .platform-polished main select:focus,
+  .platform-polished main textarea:focus { border-color:#22d3ee!important; box-shadow:0 0 0 3px rgb(34 211 238 / .11); }
+  .platform-polished main button:not(:disabled) { transition:transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease; }
+  .platform-polished main button:not(:disabled):hover { transform:translateY(-1px); }
+  .platform-navbar { position:sticky; top:0; z-index:1000; box-shadow:0 10px 30px rgb(2 6 23 / .2); backdrop-filter:blur(14px); }
+  .platform-navbar > div { min-height:70px; }
+  .platform-notifications > button { border:1px solid rgb(71 85 105 / .65); background:rgb(15 23 42 / .55); }
+  .platform-notifications > div { border-radius:1rem; box-shadow:0 22px 55px rgb(15 23 42 / .22); }
+  .platform-assignment { border-radius:1rem; background:linear-gradient(145deg,rgb(248 250 252 / .95),rgb(255 255 255 / .98)); padding:1rem; }
+  .platform-map { overflow:hidden; box-shadow:0 12px 32px rgb(15 23 42 / .08); }
+  .platform-map .leaflet-container { border-radius:.9rem; overflow:hidden; }
+  .platform-polished[class*="bg-slate-950"] { background:radial-gradient(circle at 8% 0%,rgb(34 211 238 / .08),transparent 25rem),radial-gradient(circle at 92% 12%,rgb(59 130 246 / .08),transparent 26rem),#020617; }
+  @media (max-width:768px) {
+    .platform-navbar > div { padding-left:1rem; padding-right:1rem; }
+    .platform-polished main { padding-left:1rem; padding-right:1rem; }
+  }
+}
