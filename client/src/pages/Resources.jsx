@@ -225,7 +225,7 @@ export default function Resources() {
           {loading ? <div className="p-8 text-sm text-slate-500">Loading resources...</div> : filteredResources.length === 0 ? <div className="p-10 text-center"><Boxes size={32} className="mx-auto text-slate-300" /><p className="mt-3 font-medium text-slate-700">No resources found</p><p className="mt-1 text-sm text-slate-500">Add operational resources to start tracking deployments.</p></div> : (
             <div className="divide-y divide-slate-200">
               {filteredResources.map((resource) => (
-                <article key={resource._id} className="p-5">
+                <article key={resource._id} className="admin-resource-card p-5">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-slate-900">{resource.name}</h3><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize text-slate-600">{resource.type.replaceAll("_", " ")}</span><span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusClass[resource.status]}`}>{resource.status}</span></div>
