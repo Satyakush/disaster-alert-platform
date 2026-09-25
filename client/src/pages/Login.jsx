@@ -21,6 +21,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -31,7 +32,7 @@ export default function Login() {
     try {
       const data = await loginUser({ email, password });
       const { token, user } = data;
-      login(token, user);
+      login(token, user, remember);
       navigate(user.role === "responder" ? "/responder" : "/dashboard");
     } catch (err) {
       console.error("Login failed:", err);
@@ -75,7 +76,7 @@ export default function Login() {
             </label>
 
             <div className="auth-options">
-              <label><input type="checkbox" /> <span>Remember me</span></label>
+              <label><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> <span>Remember me</span></label>
               <span className="auth-muted-link">Stay secure</span>
             </div>
 
