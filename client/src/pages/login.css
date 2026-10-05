@@ -86,3 +86,11 @@
   .disaster-login__panel-wrap{min-height:66dvh;align-items:flex-start;overflow:clip}
   .disaster-login__panel{max-height:none;overflow:visible}
 }
+
+
+/* Compact production auth layout */
+.disaster-login__panel{width:min(100%,400px);padding:1.45rem 1.55rem;border-radius:1.25rem}
+.disaster-login__heading{margin-top:1.1rem}.disaster-login__heading h2{font-size:1.9rem}.disaster-login__heading span{font-size:.8rem}
+.disaster-login__form{margin-top:1rem;gap:.7rem}.disaster-login__field input{min-height:2.9rem;padding:.65rem .85rem;font-size:.82rem}.disaster-login__submit{min-height:2.9rem;font-size:.82rem}.disaster-login__footer{margin-top:.9rem;font-size:.72rem}
+.disaster-login__brand{margin-bottom:1rem}
+@media(max-height:760px) and (min-width:901px){.disaster-login__visual-copy h1{font-size:clamp(2.5rem,4.5vw,4.4rem)}.disaster-login__visual-copy p{margin-top:.8rem}.disaster-login__panel{padding:1.2rem 1.35rem}.disaster-login__heading{margin-top:.85rem}.disaster-login__form{margin-top:.8rem;gap:.55rem}}
