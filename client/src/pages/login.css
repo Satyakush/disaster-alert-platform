@@ -73,3 +73,7 @@
 .disaster-login__visual-mark svg{width:4rem;height:4rem;fill:#0ea5e9;stroke:#bae6fd;stroke-width:1}
 .disaster-login__visual-mark svg path:last-child{fill:#e0f2fe;stroke:none}
 @media(max-width:900px){.disaster-login__visual-mark{top:2rem;left:1.5rem;width:4.2rem;height:4.2rem}.disaster-login__visual-mark svg{width:2.9rem;height:2.9rem}}
+
+
+.disaster-login__panel{align-self:center;height:max-content;min-height:0;max-height:calc(100dvh - 2rem);overflow-y:auto;overscroll-behavior:contain}
+@media(max-width:900px){.disaster-login__panel{max-height:none;overflow:visible}}
