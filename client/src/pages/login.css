@@ -76,3 +76,15 @@
 
 .disaster-login__panel{align-self:center;height:max-content;min-height:0;max-height:calc(100dvh - 2rem);overflow-y:auto;overscroll-behavior:contain}
 @media(max-width:900px){.disaster-login__panel{max-height:none;overflow:visible}}
+
+
+/* Auth viewport: keep the login/register composition fixed like the reference UI. */
+.disaster-login{height:100dvh;min-height:0;overflow:clip}
+.disaster-login__panel-wrap{min-height:0;overflow:clip}
+.disaster-login__panel{height:max-content;max-height:none;overflow:visible}
+@media(max-width:900px){
+  .disaster-login{height:100dvh}
+  .disaster-login__visual{min-height:34dvh;max-height:none}
+  .disaster-login__panel-wrap{min-height:66dvh;align-items:flex-start;overflow:clip}
+  .disaster-login__panel{max-height:none;overflow:visible}
+}
