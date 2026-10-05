@@ -35,6 +35,7 @@ export default function Register() {
   return (
     <main className="disaster-login">
       <section className="disaster-login__visual" aria-label="Disaster Alert Platform">
+        <div className="disaster-login__visual-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 5 53 13v17c0 14-9 24-21 29C20 54 11 44 11 30V13L32 5Z"/><path d="m32 17 4.2 9 9.8 1-7.3 6.5 2.1 9.5-8.8-5-8.8 5 2.1-9.5-7.3-6.5 9.8-1L32 17Z"/></svg></div>
         <div className="disaster-login__visual-copy">
           <div className="disaster-login__badge"><span className="disaster-login__status-dot" /> Disaster Alert Platform</div>
           <h1>Stay informed.<br />Respond faster.</h1>
