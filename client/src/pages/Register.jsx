@@ -42,8 +42,15 @@ export default function Register() {
 
   return (
     <main className="auth-page">
-      <section className="auth-visual" style={{ backgroundImage: "url(/auth-background.svg)" }} aria-label="Disaster Alert Platform"><div className="auth-visual-grid" aria-hidden="true" />
-        <div className="auth-visual-overlay" />
+      <section className="auth-visual" aria-label="Disaster Alert Platform">
+        <div className="auth-visual-grid" aria-hidden="true" />
+        <div className="auth-visual-content">
+          <div className="auth-visual-kicker"><span /> DISASTER ALERT PLATFORM</div>
+          <h1>Prepare early.<br /><em>Respond faster.</em></h1>
+          <p>One operational workspace for alerts, risk intelligence, and coordinated response.</p>
+          <div className="auth-visual-line" />
+          <span className="auth-visual-meta">PEOPLE · TECHNOLOGY · RESILIENCE</span>
+        </div>
       </section>
 
       <section className="auth-panel-wrap">
