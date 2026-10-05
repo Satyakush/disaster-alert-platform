@@ -42,7 +42,7 @@ export default function Register() {
 
   return (
     <main className="auth-page">
-      <section className="auth-visual" aria-label="Disaster Alert Platform"><div className="auth-visual-grid" aria-hidden="true" />
+      <section className="auth-visual" style={{ backgroundImage: "url(/auth-background.svg)" }} aria-label="Disaster Alert Platform"><div className="auth-visual-grid" aria-hidden="true" />
         <div className="auth-visual-overlay" />
       </section>
 
