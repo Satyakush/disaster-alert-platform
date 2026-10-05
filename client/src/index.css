@@ -673,7 +673,7 @@ main button {
 .auth-password-wrap{position:relative}.auth-password-wrap input{padding-right:4.5rem}.auth-password-toggle{position:absolute;right:.55rem;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#22d3ee;font-size:.72rem;font-weight:900;cursor:pointer;padding:.45rem}.auth-password-toggle:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}
 
 .disaster-login{grid-template-columns:minmax(0,1.15fr) minmax(390px,.85fr);background:#030712}
-.disaster-login__visual{background:linear-gradient(90deg,rgba(2,6,23,.08),rgba(2,6,23,.72)),url('/auth-background.svg') center/cover no-repeat}
+.disaster-login__visual{background:radial-gradient(circle at 24% 28%,rgba(34,211,238,.11),transparent 27%),radial-gradient(circle at 78% 78%,rgba(59,130,246,.08),transparent 30%),#030712}
 .disaster-login__visual-grid{position:absolute;inset:0;background:radial-gradient(circle at 24% 28%,rgba(34,211,238,.12),transparent 25%),linear-gradient(180deg,transparent 45%,rgba(2,6,23,.82));}
 .disaster-login__status-dot{width:.42rem;height:.42rem;border-radius:999px;background:#22d3ee;box-shadow:0 0 0 4px rgba(34,211,238,.1)}
 .disaster-login__panel-wrap{background:#030712;padding:clamp(1rem,5vw,4rem)}
