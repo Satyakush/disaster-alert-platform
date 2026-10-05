@@ -692,3 +692,27 @@ main button {
 .auth-panel{width:min(100%,460px)!important;border-radius:1.4rem!important}
 .auth-input-wrap input{min-height:3.4rem}
 @media(max-width:980px){.disaster-login__visual,.auth-visual{min-height:300px}.disaster-login__visual-copy{top:2rem;bottom:auto}.auth-visual{max-height:330px}.auth-panel-wrap{min-height:auto}}
+
+
+/* Responsive application baseline */
+html,body,#root{max-width:100%;overflow-x:clip}
+img,video,canvas{max-width:100%;height:auto}
+svg{max-width:100%}
+pre{max-width:100%;overflow-x:auto}
+table{max-width:100%}
+@media(max-width:1024px){
+  .grid[class~="grid-cols-4"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .grid[class~="grid-cols-3"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .min-w-0{min-width:0}
+}
+@media(max-width:640px){
+  .grid[class~="grid-cols-4"],.grid[class~="grid-cols-3"],.grid[class~="grid-cols-2"]{grid-template-columns:minmax(0,1fr)!important}
+  table{display:block;overflow-x:auto;white-space:nowrap}
+  main{max-width:100%;overflow-x:clip}
+  .platform-map .leaflet-container{min-height:260px}
+  .platform-navbar>div{flex-wrap:wrap}
+}
+@media(max-width:380px){
+  .platform-navbar>div{padding-left:.7rem;padding-right:.7rem}
+  .platform-navbar button{min-height:42px}
+}
