@@ -42,7 +42,7 @@ export default function Register() {
 
   return (
     <main className="auth-page">
-      <section className="auth-visual" style={{ backgroundImage: "url(/disaster.png)" }} aria-label="Disaster Alert Platform">
+      <section className="auth-visual" aria-label="Disaster Alert Platform"><div className="auth-visual-grid" aria-hidden="true" />
         <div className="auth-visual-overlay" />
       </section>
 
@@ -54,8 +54,9 @@ export default function Register() {
           </div>
 
           <div className="auth-heading">
-            <p>JOIN THE PLATFORM</p>
-            <h2>Create your Disaster Alert Platform account</h2>
+            <p>CREATE YOUR ACCOUNT</p>
+            <h2>Join the response network</h2>
+            <span>Set up your account to receive alerts and coordinate safer responses.</span>
           </div>
 
           {error && <div className="auth-error">{error}</div>}
