@@ -17,7 +17,6 @@
     #030712;
 }
 .disaster-login__visual::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(148,163,184,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.045) 1px,transparent 1px);background-size:72px 72px;mask-image:linear-gradient(to bottom,black,transparent 90%)}
-.disaster-login__visual::after{content:"";position:absolute;width:34rem;height:34rem;left:-12rem;top:22%;border:1px solid rgba(34,211,238,.13);border-radius:50%;box-shadow:0 0 0 70px rgba(34,211,238,.025),0 0 0 140px rgba(34,211,238,.015)}
 .disaster-login__visual::after {
   content:"";
   position:absolute; inset:0;
