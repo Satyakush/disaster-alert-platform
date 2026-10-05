@@ -47,9 +47,9 @@ export default function Login() {
 
   return (
     <main className="disaster-login">
-      <section className="disaster-login__visual" aria-label="Disaster Alert Platform">
+      <section className="disaster-login__visual" aria-label="Disaster Alert Platform"><div className="disaster-login__visual-grid" aria-hidden="true" />
         <div className="disaster-login__visual-copy">
-          <div className="disaster-login__badge">● Disaster Alert Platform</div>
+          <div className="disaster-login__badge"><span className="disaster-login__status-dot" /> Disaster Alert Platform</div>
           <h1>Stay informed.<br />Respond faster.</h1>
           <p>Monitor alerts, coordinate response teams, and keep communities informed through one secure operational platform.</p>
         </div>
@@ -63,15 +63,16 @@ export default function Login() {
           </div>
 
           <div className="disaster-login__heading">
-            <p>WELCOME BACK</p>
-            <h2>Sign in to your response workspace</h2>
+            <p>SECURE OPERATIONS</p>
+            <h2>Welcome back</h2>
+            <span>Sign in to your response workspace.</span>
           </div>
 
           {error && <div className="disaster-login__error" role="alert">{error}</div>}
 
           <form onSubmit={handleSubmit} className="disaster-login__form">
             <label className="disaster-login__field">
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" autoComplete="email" aria-label="Email address" />
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" aria-label="Email address" />
             </label>
 
             <label className="disaster-login__field">
