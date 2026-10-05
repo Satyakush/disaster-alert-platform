@@ -68,3 +68,8 @@
   .disaster-login__panel-wrap { padding:.75rem; }
   .disaster-login__panel { padding:1.15rem; border-radius:1.25rem; margin-top:-1.8rem; }
 }
+
+.disaster-login__visual-mark{position:absolute;top:5.5rem;left:clamp(2rem,7vw,5rem);z-index:3;width:5.8rem;height:5.8rem;display:grid;place-items:center;border:2px solid #22d3ee;border-radius:50%;background:rgba(8,47,73,.42);box-shadow:0 0 0 5px rgba(34,211,238,.06),0 0 40px rgba(34,211,238,.12)}
+.disaster-login__visual-mark svg{width:4rem;height:4rem;fill:#0ea5e9;stroke:#bae6fd;stroke-width:1}
+.disaster-login__visual-mark svg path:last-child{fill:#e0f2fe;stroke:none}
+@media(max-width:900px){.disaster-login__visual-mark{top:2rem;left:1.5rem;width:4.2rem;height:4.2rem}.disaster-login__visual-mark svg{width:2.9rem;height:2.9rem}}
