@@ -18,6 +18,7 @@ export default function Register() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
   const handleChange = (e) => {
@@ -70,7 +71,7 @@ export default function Register() {
             </label>
             <label className="auth-input-wrap">
               <LockIcon />
-              <input name="password" type="password" placeholder="Create password" value={form.password} onChange={handleChange} required minLength={6} autoComplete="new-password" />
+              <div className="auth-password-wrap"><input name="password" type={showPassword ? "text" : "password"} placeholder="Create password" value={form.password} onChange={handleChange} required minLength={6} autoComplete="new-password" /><button type="button" className="auth-password-toggle" onClick={() => setShowPassword((value) => !value)}>{showPassword ? "Hide" : "Show"}</button></div>
             </label>
 
             <p className="auth-helper">Your account gives you access to real-time alerts, risk intelligence and community safety tools.</p>
