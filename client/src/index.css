@@ -687,3 +687,5 @@ main button {
     }
   }
 }
+
+.auth-password-wrap{position:relative}.auth-password-wrap input{padding-right:4.5rem}.auth-password-toggle{position:absolute;right:.55rem;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#22d3ee;font-size:.72rem;font-weight:900;cursor:pointer;padding:.45rem}.auth-password-toggle:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}
